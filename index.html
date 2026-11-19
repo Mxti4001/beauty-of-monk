@@ -1,0 +1,1758 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>Beauty of Monk — 1 in 65,000,000</title>
+  <meta name="description" content="A contemplative Thai Monastic Life Simulation web game inspired by 1 in 65 Million. Experience the peace, discipline, and profound beauty of being a Thai Buddhist monk." />
+  
+  <!-- Google Fonts: English Literary & Classical Typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <style>
+    :root {
+      --bg-deep: #0a0c0e;
+      --bg-panel: rgba(18, 22, 28, 0.90);
+      --bg-card: rgba(28, 33, 42, 0.78);
+      --saffron-bright: #e59819;
+      --saffron-gold: #c8811a;
+      --saffron-deep: #8f530d;
+      --saffron-glow: rgba(229, 152, 25, 0.22);
+      --jade-leaf: #528c6e;
+      --sand-parchment: #ede6d8;
+      --sand-muted: #a39c8e;
+      --border-warm: rgba(237, 230, 216, 0.12);
+      --border-gold: rgba(229, 152, 25, 0.35);
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: var(--bg-deep);
+      color: var(--sand-parchment);
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+      touch-action: manipulation;
+    }
+
+    .font-title {
+      font-family: 'Cinzel', serif;
+    }
+
+    .font-mono-num {
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Ambient Canvas */
+    #ambientCanvas {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Vignette & Temple Atmosphere */
+    .temple-vignette {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background: radial-gradient(circle at 50% 25%, transparent 20%, rgba(5, 7, 9, 0.85) 75%, rgba(2, 3, 4, 0.97) 100%);
+      z-index: 1;
+    }
+
+    /* Glass Sanctuary UI */
+    .sanctuary-card {
+      background: var(--bg-panel);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--border-warm);
+      box-shadow: 0 16px 45px rgba(0, 0, 0, 0.65);
+    }
+
+    .inner-card {
+      background: var(--bg-card);
+      border: 1px solid rgba(237, 230, 216, 0.08);
+    }
+
+    /* Interactive Buttons */
+    .monk-btn {
+      transition: all 0.22s cubic-bezier(0.2, 0.9, 0.4, 1);
+      position: relative;
+      cursor: pointer;
+    }
+    .monk-btn:hover:not(:disabled) {
+      border-color: var(--saffron-bright);
+      background-color: rgba(229, 152, 25, 0.14);
+      transform: translateY(-1.5px);
+      box-shadow: 0 4px 18px var(--saffron-glow);
+    }
+    .monk-btn:active:not(:disabled) {
+      transform: translateY(1px);
+    }
+    .monk-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      transform: none !important;
+    }
+
+    /* Animated Gold Glow */
+    @keyframes goldenPulse {
+      0%, 100% { box-shadow: 0 0 16px rgba(229, 152, 25, 0.16); border-color: rgba(229, 152, 25, 0.35); }
+      50% { box-shadow: 0 0 34px rgba(229, 152, 25, 0.45); border-color: rgba(229, 152, 25, 0.75); }
+    }
+    .pulse-gold {
+      animation: goldenPulse 3.5s infinite ease-in-out;
+    }
+
+    @keyframes fadeUpIn {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fadeIn {
+      animation: fadeUpIn 0.45s ease-out forwards;
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 5px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(10, 12, 14, 0.8);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(200, 129, 26, 0.35);
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(229, 152, 25, 0.65);
+    }
+
+    /* Rarity Color Badges */
+    .badge-common { color: #a39c8e; border-color: rgba(163, 156, 142, 0.3); background: rgba(163, 156, 142, 0.08); }
+    .badge-uncommon { color: #528c6e; border-color: rgba(82, 140, 110, 0.4); background: rgba(82, 140, 110, 0.08); }
+    .badge-rare { color: #e59819; border-color: rgba(229, 152, 25, 0.5); background: rgba(229, 152, 25, 0.12); }
+    .badge-profound { color: #f4c05e; border-color: rgba(244, 192, 94, 0.7); background: rgba(244, 192, 94, 0.15); text-shadow: 0 0 10px rgba(229, 152, 25, 0.4); }
+    .badge-transcendent { color: #fff8e8; border-color: #f4c05e; background: linear-gradient(135deg, rgba(229,152,25,0.32), rgba(82,140,110,0.28)); text-shadow: 0 0 18px rgba(255, 248, 232, 0.85); }
+  </style>
+</head>
+<body class="selection:bg-[#e59819]/30 selection:text-[#ede6d8]">
+
+  <!-- Background Canvas: Floating incense smoke & dust particles -->
+  <canvas id="ambientCanvas"></canvas>
+  <div class="temple-vignette"></div>
+
+  <!-- Main Container -->
+  <div class="relative z-10 flex flex-col min-h-screen max-w-4xl mx-auto px-3 sm:px-6 py-4 sm:py-6">
+    
+    <!-- Top Nav / Header -->
+    <header class="flex items-center justify-between pb-3.5 border-b border-[#ede6d8]/10 gap-2">
+      <!-- Title & Emblem -->
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-full border border-[#e59819]/50 flex items-center justify-center bg-[#e59819]/10 text-[#e59819] shadow-md shadow-[#e59819]/10 shrink-0">
+          <!-- Dhamma Wheel / Lotus SVG -->
+          <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+            <circle cx="12" cy="12" r="9" />
+            <circle cx="12" cy="12" r="3" />
+            <path d="M12 3v6M12 15v6M3 12h6M15 12h6" />
+            <path d="M5.6 5.6l4.2 4.2M14.2 14.2l4.2 4.2M18.4 5.6l-4.2 4.2M9.8 14.2l-4.2 4.2" />
+          </svg>
+        </div>
+        <div>
+          <h1 class="text-lg sm:text-xl font-bold tracking-wide text-[#ede6d8] flex items-center gap-2">
+            <span class="font-title text-[#e59819]">Beauty of Monk</span>
+            <span class="text-xs px-2 py-0.5 rounded bg-[#e59819]/15 text-[#e59819] font-mono-num font-normal border border-[#e59819]/30">1 in 65M</span>
+          </h1>
+          <p class="text-xs text-[#a39c8e] tracking-wide italic">
+            The Serene Path — A Contemplative Thai Monastic Life Simulation
+          </p>
+        </div>
+      </div>
+
+      <!-- Action Buttons (Phone link, Almanac, Audio Toggle) -->
+      <div class="flex items-center gap-1.5 sm:gap-2">
+        <!-- Phone Access Help -->
+        <button id="btnPhoneQR" class="monk-btn px-2.5 sm:px-3 py-1.5 rounded-lg inner-card text-xs font-mono-num text-[#ede6d8] border border-[#ede6d8]/15 flex items-center gap-1.5" title="Play on your Phone / Mobile Link">
+          <svg class="w-4 h-4 text-[#e59819]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <rect x="5" y="2" width="14" height="20" rx="2" ry="2" />
+            <line x1="12" y1="18" x2="12.01" y2="18" />
+          </svg>
+          <span class="hidden sm:inline">Phone Link</span>
+        </button>
+
+        <!-- Almanac / Journal of 65M Wonders -->
+        <button id="btnOpenAlmanac" class="monk-btn px-2.5 sm:px-3 py-1.5 rounded-lg inner-card text-xs text-[#ede6d8] border border-[#ede6d8]/15 flex items-center gap-1.5" title="Almanac of 1 in 65,000,000 Serenity Moments">
+          <svg class="w-4 h-4 text-[#e59819]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+          </svg>
+          <span class="hidden sm:inline">Almanac</span>
+          <span id="txtAlmanacCount" class="font-mono-num text-[11px] px-1.5 py-0.2 rounded-full bg-[#e59819]/20 text-[#e59819]">0/20</span>
+        </button>
+
+        <!-- Audio Toggle (Temple Singing Bowl) -->
+        <button id="btnAudioToggle" class="monk-btn p-2 rounded-lg inner-card text-[#a39c8e] hover:text-[#ede6d8] border border-[#ede6d8]/15" title="Toggle Temple Singing Bowl Chimes">
+          <svg id="iconSoundOn" class="w-4 h-4 text-[#e59819]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+            <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+            <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
+          </svg>
+          <svg id="iconSoundOff" class="w-4 h-4 hidden text-[#a39c8e]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+            <line x1="23" y1="9" x2="17" y2="15" />
+            <line x1="17" y1="9" x2="23" y2="15" />
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Monk Identity & Vassa HUD (Visible when ordained) -->
+    <div id="monkIdentityBar" class="hidden mt-3 p-3 rounded-xl sanctuary-card border border-[#e59819]/25 flex flex-wrap items-center justify-between gap-3 text-xs animate-fadeIn">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-full bg-[#e59819]/20 border border-[#e59819]/40 flex items-center justify-center text-sm font-semibold text-[#e59819]">
+          🪷
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <span id="hudMonkName" class="text-sm font-semibold text-[#ede6d8] tracking-wide">Phra Thitasaddho</span>
+            <span id="hudTempleLineage" class="text-[11px] px-2 py-0.5 rounded bg-[#528c6e]/20 text-[#528c6e] border border-[#528c6e]/30">Forest Hermitage</span>
+          </div>
+          <p id="hudMonkOrigin" class="text-[11px] text-[#a39c8e]">Ordained at Doi Dhamma Monastery, Chiang Mai</p>
+        </div>
+      </div>
+
+      <!-- Time & Days Tracking -->
+      <div class="flex items-center gap-4 sm:gap-6 font-mono-num text-xs bg-black/40 px-3.5 py-1.5 rounded-lg border border-[#ede6d8]/10">
+        <div>
+          <span class="text-[#a39c8e]">VASSA</span>
+          <span id="hudVassa" class="text-[#e59819] font-bold ml-1 text-sm">1</span>
+        </div>
+        <div class="w-px h-4 bg-[#ede6d8]/20"></div>
+        <div>
+          <span class="text-[#a39c8e]">DAYS</span>
+          <span id="hudDay" class="text-[#ede6d8] font-bold ml-1 text-sm">1</span>
+        </div>
+        <div class="w-px h-4 bg-[#ede6d8]/20"></div>
+        <div>
+          <span class="text-[#a39c8e]">CLARITY</span>
+          <span id="hudClarity" class="text-[#528c6e] font-bold ml-1 text-sm">1.00x</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5 Core Monastic Virtues Bars -->
+    <div id="virtuesContainer" class="hidden mt-3 grid grid-cols-2 sm:grid-cols-5 gap-2 animate-fadeIn text-xs">
+      <!-- 1. Vinaya (Discipline / Moral Precepts) -->
+      <div class="sanctuary-card rounded-lg p-2.5 border border-[#ede6d8]/10 flex flex-col justify-between" title="Vinaya · Adherence to the 227 monastic rules and moral purity">
+        <div class="flex justify-between items-center mb-1">
+          <span class="text-[#a39c8e] font-medium flex items-center gap-1">
+            <span>🛡️</span> <span>Vinaya (227)</span>
+          </span>
+          <span id="valVinaya" class="font-mono-num text-[#ede6d8] font-bold">100</span>
+        </div>
+        <div class="w-full h-1.5 bg-[#ede6d8]/10 rounded-full overflow-hidden">
+          <div id="barVinaya" class="h-full bg-[#e59819] transition-all duration-300" style="width: 100%"></div>
+        </div>
+      </div>
+
+      <!-- 2. Sati (Mindfulness) -->
+      <div class="sanctuary-card rounded-lg p-2.5 border border-[#ede6d8]/10 flex flex-col justify-between" title="Sati · Moment-to-moment awareness of breath, body, and thoughts">
+        <div class="flex justify-between items-center mb-1">
+          <span class="text-[#a39c8e] font-medium flex items-center gap-1">
+            <span>🕯️</span> <span>Sati (Mindful)</span>
+          </span>
+          <span id="valSati" class="font-mono-num text-[#ede6d8] font-bold">35</span>
+        </div>
+        <div class="w-full h-1.5 bg-[#ede6d8]/10 rounded-full overflow-hidden">
+          <div id="barSati" class="h-full bg-[#528c6e] transition-all duration-300" style="width: 35%"></div>
+        </div>
+      </div>
+
+      <!-- 3. Panna (Wisdom) -->
+      <div class="sanctuary-card rounded-lg p-2.5 border border-[#ede6d8]/10 flex flex-col justify-between" title="Panna · Insight into impermanence, suffering, and non-self">
+        <div class="flex justify-between items-center mb-1">
+          <span class="text-[#a39c8e] font-medium flex items-center gap-1">
+            <span>📜</span> <span>Panna (Wisdom)</span>
+          </span>
+          <span id="valPanna" class="font-mono-num text-[#ede6d8] font-bold">25</span>
+        </div>
+        <div class="w-full h-1.5 bg-[#ede6d8]/10 rounded-full overflow-hidden">
+          <div id="barPanna" class="h-full bg-[#d4a373] transition-all duration-300" style="width: 25%"></div>
+        </div>
+      </div>
+
+      <!-- 4. Metta (Compassion / Loving-kindness) -->
+      <div class="sanctuary-card rounded-lg p-2.5 border border-[#ede6d8]/10 flex flex-col justify-between" title="Metta · Boundless goodwill to all living creatures and faith of devotees">
+        <div class="flex justify-between items-center mb-1">
+          <span class="text-[#a39c8e] font-medium flex items-center gap-1">
+            <span>🪷</span> <span>Metta (Grace)</span>
+          </span>
+          <span id="valMetta" class="font-mono-num text-[#ede6d8] font-bold">30</span>
+        </div>
+        <div class="w-full h-1.5 bg-[#ede6d8]/10 rounded-full overflow-hidden">
+          <div id="barMetta" class="h-full bg-[#a39c8e] transition-all duration-300" style="width: 30%"></div>
+        </div>
+      </div>
+
+      <!-- 5. Kaya (Physical Vitality / Health) -->
+      <div class="sanctuary-card rounded-lg p-2.5 border border-[#ede6d8]/10 flex flex-col justify-between col-span-2 sm:col-span-1" title="Kaya · Physical resilience against climate, fasting, and long walks">
+        <div class="flex justify-between items-center mb-1">
+          <span class="text-[#a39c8e] font-medium flex items-center gap-1">
+            <span>🌿</span> <span>Kaya (Vitality)</span>
+          </span>
+          <span id="valHealth" class="font-mono-num text-[#ede6d8] font-bold">85</span>
+        </div>
+        <div class="w-full h-1.5 bg-[#ede6d8]/10 rounded-full overflow-hidden">
+          <div id="barHealth" class="h-full bg-[#609966] transition-all duration-300" style="width: 85%"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MAIN GAMEPLAY STAGE -->
+    <main class="my-4 flex-1 flex flex-col gap-4">
+      
+      <!-- Central Sanctuary Story & Scene Card -->
+      <section class="sanctuary-card rounded-2xl p-5 sm:p-8 relative overflow-hidden border border-[#ede6d8]/15">
+        
+        <!-- Header Tag: Scene, Period, Rarest Wonder -->
+        <div class="flex flex-wrap items-center justify-between gap-2 pb-3 mb-4 border-b border-[#ede6d8]/10 text-xs font-mono-num">
+          <div class="flex items-center gap-2">
+            <span id="tagTimeOfDay" class="px-2.5 py-0.5 rounded-full bg-[#e59819]/15 text-[#e59819] border border-[#e59819]/30 uppercase tracking-wider font-semibold">
+              DAWN · 05:30 AM
+            </span>
+            <span id="tagLocation" class="text-[#a39c8e]">
+              Courtyard Beneath the Bodhi Tree
+            </span>
+          </div>
+
+          <div class="text-[#a39c8e]">
+            <span>RAREST GRACE:</span>
+            <span id="valRarestBadge" class="text-[#e59819] font-medium ml-1">None yet</span>
+          </div>
+        </div>
+
+        <!-- Narrative Content Area (100% English) -->
+        <div id="storyContent" class="space-y-4 text-base sm:text-lg leading-relaxed text-[#ede6d8] min-h-[140px]">
+          <!-- Populated dynamically -->
+        </div>
+
+        <!-- 1 in 65M Wonder Discovery Banner (Shows when roll triggers) -->
+        <div id="wonderBanner" class="hidden mt-6 pt-5 border-t border-[#ede6d8]/15 animate-fadeIn">
+          <div class="flex items-center justify-between gap-2 mb-2">
+            <div class="flex items-center gap-2">
+              <span id="wonderOddsBadge" class="px-2.5 py-0.5 rounded-full border text-xs font-mono-num tracking-wider badge-rare">
+                1 in 1,200
+              </span>
+              <span id="wonderNewPill" class="hidden px-2 py-0.5 rounded bg-[#e59819]/25 text-[#e59819] font-mono-num text-[10px] uppercase font-bold tracking-widest">
+                New Awakening
+              </span>
+            </div>
+            <span id="wonderMomentNum" class="text-[11px] font-mono-num text-[#a39c8e]">
+              MOMENT #1
+            </span>
+          </div>
+          <h3 id="wonderTitle" class="text-lg sm:text-xl font-bold text-[#ede6d8]">
+            Morning Dew on a Lotus Leaf
+          </h3>
+          <p id="wonderDesc" class="text-sm sm:text-base italic text-[#a39c8e] mt-1">
+            "A single crystal drop holds the entire morning sky before slipping back into the pond without a sound."
+          </p>
+        </div>
+
+        <!-- Action / Choice Area (Dynamically Rendered) -->
+        <div id="choicesArea" class="mt-6 pt-5 border-t border-[#ede6d8]/10 flex flex-col gap-2.5">
+          <!-- Populated dynamically: Ordination steps, Event choices, or Mindful action button -->
+        </div>
+      </section>
+
+      <!-- Monastic Daily Practice Hub (Visible when in routine state) -->
+      <section id="dailyPracticeHub" class="hidden sanctuary-card rounded-2xl p-4 sm:p-5 border border-[#ede6d8]/15 animate-fadeIn">
+        <div class="flex items-center justify-between mb-3">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-[#e59819] animate-pulse"></span>
+            <h3 class="text-sm font-semibold text-[#ede6d8] uppercase tracking-wider font-mono-num">
+              Monastic Duties & Contemplative Practices
+            </h3>
+          </div>
+          <span class="text-xs text-[#a39c8e] italic">Choose a practice to advance through the day</span>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+          <!-- 1. Morning Alms -->
+          <button id="btnActionAlms" class="monk-btn p-3 rounded-xl inner-card border border-[#ede6d8]/10 flex flex-col items-center text-center gap-1.5 hover:border-[#e59819]">
+            <span class="text-2xl">🥣</span>
+            <span class="text-xs font-semibold text-[#ede6d8]">Morning Alms</span>
+            <span class="text-[11px] text-[#a39c8e] leading-tight">Walk village lanes at dawn</span>
+          </button>
+
+          <!-- 2. Mindful Meditation -->
+          <button id="btnActionMeditation" class="monk-btn p-3 rounded-xl inner-card border border-[#ede6d8]/10 flex flex-col items-center text-center gap-1.5 hover:border-[#528c6e]">
+            <span class="text-2xl">🧘‍♂️</span>
+            <span class="text-xs font-semibold text-[#ede6d8]">Meditation</span>
+            <span class="text-[11px] text-[#a39c8e] leading-tight">Breath contemplation & walking</span>
+          </button>
+
+          <!-- 3. Temple Chores & Chanting -->
+          <button id="btnActionChores" class="monk-btn p-3 rounded-xl inner-card border border-[#ede6d8]/10 flex flex-col items-center text-center gap-1.5 hover:border-[#d4a373]">
+            <span class="text-2xl">🧹</span>
+            <span class="text-xs font-semibold text-[#ede6d8]">Temple Chores</span>
+            <span class="text-[11px] text-[#a39c8e] leading-tight">Sweep leaves & evening chant</span>
+          </button>
+
+          <!-- 4. Forest Tudong Pilgrimage -->
+          <button id="btnActionPilgrimage" class="monk-btn p-3 rounded-xl inner-card border border-[#ede6d8]/10 flex flex-col items-center text-center gap-1.5 hover:border-[#e59819]">
+            <span class="text-2xl">🌲</span>
+            <span class="text-xs font-semibold text-[#ede6d8]">Forest Tudong</span>
+            <span class="text-[11px] text-[#a39c8e] leading-tight">Pilgrimage into wilderness</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- Breath Meditation Focus Ring (Hold-to-Breathe Mini-game) -->
+      <section id="breathTrainerSection" class="hidden sanctuary-card rounded-2xl p-4 sm:p-5 border border-[#528c6e]/30 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div class="flex-1 text-center sm:text-left">
+          <div class="flex items-center justify-center sm:justify-start gap-2">
+            <span class="w-2 h-2 rounded-full bg-[#528c6e] animate-ping"></span>
+            <h4 class="text-sm font-semibold text-[#ede6d8]">
+              Anapanasati — Mindful Breath Observation
+            </h4>
+          </div>
+          <p class="text-xs sm:text-sm text-[#a39c8e] mt-1">
+            Hold down the button to settle worldly noise. Deeper stillness multiplies your clarity roll up to <span class="text-[#528c6e] font-mono-num font-bold">3.50x</span>.
+          </p>
+          <!-- Gauge Bar -->
+          <div class="w-full h-1.5 bg-[#ede6d8]/10 rounded-full mt-2.5 overflow-hidden">
+            <div id="breathGaugeFill" class="h-full bg-gradient-to-r from-[#528c6e] via-[#e59819] to-[#f4c05e] transition-all duration-100" style="width: 0%"></div>
+          </div>
+        </div>
+
+        <button id="btnHoldBreathe" class="monk-btn select-none px-6 py-3.5 rounded-xl border border-[#528c6e]/60 bg-[#528c6e]/15 text-[#ede6d8] text-sm font-semibold tracking-wide flex items-center gap-2.5 cursor-pointer shrink-0">
+          <svg class="w-4 h-4 text-[#528c6e]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10" />
+            <path d="M12 6v6l4 2" />
+          </svg>
+          <span id="lblHoldBreatheText">Hold to Settle Mind</span>
+        </button>
+      </section>
+
+    </main>
+
+    <!-- Footer Controls -->
+    <footer class="pt-3 border-t border-[#ede6d8]/10 flex flex-wrap items-center justify-between gap-3 text-xs text-[#a39c8e]">
+      <div class="flex items-center gap-2 italic">
+        <span>“All things arise, stay for a brief season, and fade away; nothing is truly possessed.”</span>
+      </div>
+      <div class="flex items-center gap-3">
+        <button id="btnAutoContemplate" class="hidden hover:text-[#e59819] transition-colors cursor-pointer font-mono-num text-[11px]">
+          [Auto-Contemplate: OFF]
+        </button>
+        <button id="btnDisrobeEarly" class="hidden hover:text-amber-400 transition-colors cursor-pointer text-[11px]">
+          [Disrobe with Dignity]
+        </button>
+        <button id="btnResetAll" class="hover:text-red-400/80 transition-colors cursor-pointer font-mono-num text-[11px]">
+          [Begin Anew]
+        </button>
+      </div>
+    </footer>
+  </div>
+
+  <!-- MODAL 1: PHONE ACCESS & QR CODE -->
+  <div id="phoneModal" class="fixed inset-0 z-50 hidden items-center justify-center p-3 sm:p-5 bg-black/85 backdrop-blur-md">
+    <div class="sanctuary-card rounded-2xl w-full max-w-md p-6 border border-[#e59819]/40 text-center space-y-4">
+      <div class="flex items-center justify-between pb-2 border-b border-[#ede6d8]/10">
+        <h3 class="text-lg font-bold text-[#ede6d8] flex items-center gap-2">
+          <span>📱 Play on Your Phone</span>
+        </h3>
+        <button id="btnClosePhone" class="monk-btn p-1.5 rounded-full border border-[#ede6d8]/15 text-[#a39c8e] hover:text-[#ede6d8]">
+          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+      </div>
+
+      <p class="text-xs text-[#a39c8e] leading-relaxed">
+        Open the live link below on your smartphone browser (Safari, Chrome) to play anywhere:
+      </p>
+
+      <!-- Clickable link box -->
+      <div class="bg-black/60 rounded-xl p-3 border border-[#e59819]/30 flex items-center justify-between gap-2">
+        <input id="txtPublicPhoneUrl" readonly type="text" class="bg-transparent text-xs text-[#e59819] font-mono-num w-full outline-none select-all" value="https://permitted-david-plain-sam.trycloudflare.com" />
+        <button id="btnCopyPhoneUrl" class="monk-btn px-2.5 py-1 rounded bg-[#e59819]/20 text-[#e59819] font-mono-num text-xs shrink-0">
+          Copy
+        </button>
+      </div>
+
+      <!-- Live QR Code Image -->
+      <div class="flex flex-col items-center justify-center p-3 bg-white rounded-xl mx-auto w-48 h-48 shadow-lg">
+        <img id="imgQrCode" src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=https://permitted-david-plain-sam.trycloudflare.com" alt="Scan to Play on Mobile" class="w-full h-full object-contain" />
+      </div>
+
+      <p class="text-[11px] text-[#a39c8e]">
+        Scan the QR code with your phone camera to play instantly. Touch controls and sound work automatically!
+      </p>
+    </div>
+  </div>
+
+  <!-- MODAL 2: ALMANAC OF 1 IN 65 MILLION MOMENTS -->
+  <div id="almanacModal" class="fixed inset-0 z-50 hidden items-center justify-center p-3 sm:p-5 bg-black/85 backdrop-blur-md">
+    <div class="sanctuary-card rounded-2xl w-full max-w-2xl max-h-[88vh] flex flex-col overflow-hidden border border-[#e59819]/40">
+      <div class="p-4 sm:p-6 border-b border-[#ede6d8]/10 flex items-center justify-between">
+        <div>
+          <h2 class="text-lg sm:text-xl font-bold text-[#ede6d8] flex items-center gap-2">
+            <span>Almanac of 1 in 65,000,000</span>
+            <span class="text-xs px-2 py-0.5 rounded bg-[#e59819]/20 text-[#e59819] font-mono-num font-normal">Moments of Serenity</span>
+          </h2>
+          <p class="text-xs text-[#a39c8e] mt-0.5">
+            Rare glimpses of stillness witnessed along the saffron path (<span id="txtModalProgress" class="text-[#e59819] font-mono-num">0 / 20</span>)
+          </p>
+        </div>
+        <button id="btnCloseAlmanac" class="monk-btn p-2 rounded-full border border-[#ede6d8]/15 text-[#a39c8e] hover:text-[#ede6d8] cursor-pointer">
+          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+      </div>
+
+      <div id="almanacListContainer" class="p-4 sm:p-6 overflow-y-auto space-y-3 flex-1">
+        <!-- Dynamically filled with rarity items -->
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 3: MONASTIC LIFE SUMMARY & CERTIFICATE -->
+  <div id="summaryModal" class="fixed inset-0 z-50 hidden items-center justify-center p-3 sm:p-5 bg-black/90 backdrop-blur-lg">
+    <div class="sanctuary-card rounded-2xl w-full max-w-lg p-6 sm:p-8 border border-[#e59819]/50 text-center space-y-5 shadow-2xl shadow-[#e59819]/20">
+      
+      <div class="w-16 h-16 mx-auto rounded-full bg-[#e59819]/15 border border-[#e59819]/40 flex items-center justify-center text-3xl">
+        🪷
+      </div>
+
+      <div>
+        <h3 id="txtSummaryTitle" class="text-xl sm:text-2xl font-bold text-[#ede6d8] font-title">
+          Monastic Life Epitaph
+        </h3>
+        <p id="txtSummarySubtitle" class="text-xs sm:text-sm text-[#e59819] mt-1">
+          Venerated Elder of Faith & Compassion
+        </p>
+      </div>
+
+      <div class="bg-black/50 rounded-xl p-4 border border-[#ede6d8]/10 text-xs font-mono-num grid grid-cols-2 gap-3 text-left">
+        <div>
+          <span class="text-[#a39c8e]">Monk Name:</span>
+          <p id="sumName" class="text-sm font-semibold text-[#ede6d8]">Phra Thitasaddho</p>
+        </div>
+        <div>
+          <span class="text-[#a39c8e]">Vassa Walked:</span>
+          <p id="sumVassa" class="text-sm font-semibold text-[#e59819]">12 Vassa (420 Days)</p>
+        </div>
+        <div>
+          <span class="text-[#a39c8e]">Highest Grace:</span>
+          <p id="sumRarest" class="text-sm font-semibold text-[#528c6e]">1 in 350,000</p>
+        </div>
+        <div>
+          <span class="text-[#a39c8e]">Karma Balance:</span>
+          <p id="sumMerit" class="text-sm font-semibold text-[#f4c05e]">Boundless Virtue</p>
+        </div>
+      </div>
+
+      <p id="txtSummaryStory" class="text-xs sm:text-sm text-[#ede6d8]/90 italic leading-relaxed text-left border-l-2 border-[#e59819] pl-3 py-1">
+        <!-- Epitaph text -->
+      </p>
+
+      <div class="flex items-center justify-center gap-3 pt-2">
+        <button id="btnShareCertificate" class="monk-btn px-4 py-2.5 rounded-xl border border-[#e59819]/40 bg-[#e59819]/15 text-xs text-[#e59819]">
+          📋 Copy Certificate
+        </button>
+        <button id="btnRestartAfterSummary" class="monk-btn px-5 py-2.5 rounded-xl border border-[#ede6d8]/20 bg-[#ede6d8]/10 text-xs text-[#ede6d8]">
+          Begin Anew in Samsara
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 4: CONFIRM RESTART -->
+  <div id="confirmRestartModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+    <div class="sanctuary-card rounded-2xl w-full max-w-sm p-6 border border-[#ede6d8]/20 text-center space-y-4">
+      <h3 class="text-lg font-bold text-[#ede6d8]">Let Go and Begin Anew?</h3>
+      <p class="text-xs text-[#a39c8e] leading-relaxed">
+        Just as sand mandalas return peacefully to the running river, all days walked and insights gathered will dissolve into emptiness.
+      </p>
+      <div class="flex items-center justify-center gap-3 pt-2">
+        <button id="btnCancelReset" class="monk-btn px-4 py-2 rounded-xl border border-[#ede6d8]/20 text-xs text-[#ede6d8]">
+          Stay on Path
+        </button>
+        <button id="btnConfirmReset" class="monk-btn px-4 py-2 rounded-xl border border-red-500/40 bg-red-950/40 text-xs text-red-200">
+          Begin Anew
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- JAVASCRIPT GAME LOGIC (100% ENGLISH STORY & GAMEPLAY) -->
+  <script>
+    /**
+     * =========================================================================
+     * BEAUTY OF MONK — 1 IN 65,000,000
+     * Complete English Contemplative Life Simulation
+     * =========================================================================
+     */
+
+    // --- 1. TEMPLE AUDIO SYNTHESIZER (Web Audio API) ---
+    class TempleAudio {
+      constructor() {
+        this.ctx = null;
+        this.muted = false;
+      }
+
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          this.ctx = new AudioContext();
+        }
+        if (this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      // Temple singing bowl chime
+      playSingingBowl(rarity = 10) {
+        if (this.muted) return;
+        try {
+          this.init();
+          const now = this.ctx.currentTime;
+          let baseFreq = 261.63; // C4
+          let duration = 3.2;
+
+          if (rarity >= 65000000) {
+            baseFreq = 528.0; // 528Hz Miracle tone
+            duration = 7.0;
+          } else if (rarity >= 100000) {
+            baseFreq = 432.0; // 432Hz Pure
+            duration = 5.2;
+          } else if (rarity >= 2500) {
+            baseFreq = 396.0;
+            duration = 4.2;
+          } else if (rarity >= 100) {
+            baseFreq = 329.63;
+            duration = 3.5;
+          }
+
+          const ratios = [1, 2.76, 5.4, 8.9];
+          const gains = [0.18, 0.06, 0.02, 0.008];
+
+          ratios.forEach((r, idx) => {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(baseFreq * r, now);
+
+            gain.gain.setValueAtTime(0.0001, now);
+            gain.gain.exponentialRampToValueAtTime(gains[idx], now + 0.03);
+            gain.gain.exponentialRampToValueAtTime(0.00001, now + duration / (idx * 0.7 + 1));
+
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start(now);
+            osc.stop(now + duration);
+          });
+        } catch (e) {}
+      }
+
+      // Wooden Temple Percussion
+      playWoodBlock() {
+        if (this.muted) return;
+        try {
+          this.init();
+          const now = this.ctx.currentTime;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(800, now);
+          osc.frequency.exponentialRampToValueAtTime(240, now + 0.06);
+
+          gain.gain.setValueAtTime(0.12, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.1);
+        } catch (e) {}
+      }
+    }
+
+    const audio = new TempleAudio();
+
+    // --- 2. AMBIENT PARTICLES CANVAS ---
+    class ParticleScene {
+      constructor(canvas) {
+        this.canvas = canvas;
+        this.ctx = canvas.getContext('2d');
+        this.particles = [];
+        this.resize();
+        window.addEventListener('resize', () => this.resize());
+        this.createParticles();
+      }
+
+      resize() {
+        this.canvas.width = window.innerWidth;
+        this.canvas.height = window.innerHeight;
+      }
+
+      createParticles() {
+        const count = Math.min(60, Math.floor((window.innerWidth * window.innerHeight) / 16000));
+        this.particles = [];
+        for (let i = 0; i < count; i++) {
+          this.particles.push({
+            x: Math.random() * this.canvas.width,
+            y: Math.random() * this.canvas.height,
+            r: Math.random() * 1.8 + 0.4,
+            vx: (Math.random() - 0.5) * 0.2,
+            vy: -Math.random() * 0.35 - 0.06,
+            alpha: Math.random() * 0.4 + 0.1,
+            isGold: Math.random() > 0.4
+          });
+        }
+      }
+
+      render() {
+        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        for (const p of this.particles) {
+          p.x += p.vx + Math.sin(p.y * 0.008) * 0.15;
+          p.y += p.vy;
+
+          if (p.y < -10) {
+            p.y = this.canvas.height + 10;
+            p.x = Math.random() * this.canvas.width;
+          }
+          if (p.x < -10) p.x = this.canvas.width + 10;
+          if (p.x > this.canvas.width + 10) p.x = -10;
+
+          this.ctx.beginPath();
+          this.ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+          this.ctx.fillStyle = p.isGold
+            ? `rgba(229, 152, 25, ${p.alpha})`
+            : `rgba(237, 230, 216, ${p.alpha * 0.7})`;
+          this.ctx.fill();
+        }
+        requestAnimationFrame(() => this.render());
+      }
+    }
+
+    // --- 3. DATA TABLES: 1 IN 65,000,000 MOMENTS OF BEAUTY (ENGLISH) ---
+    const ALMANAC_POOL = [
+      {
+        id: 'dew_drop',
+        odds: 10,
+        tier: 'common',
+        title: 'Morning Dew on a Lotus Leaf',
+        desc: 'A crystal drop holds the entire dawn sky before slipping into the pond without a sound.',
+        reflection: 'Beauty does not need to last forever to be complete.'
+      },
+      {
+        id: 'barefoot_stone',
+        odds: 25,
+        tier: 'common',
+        title: 'Cool Courtyard Stones Under Bare Feet',
+        desc: 'At 5:30 AM, ancient stones still hold the memory of night stars beneath mindful steps.',
+        reflection: 'To walk barefoot is to let the earth remind you that you belong to it.'
+      },
+      {
+        id: 'incense_dissolving',
+        odds: 50,
+        tier: 'common',
+        title: 'Sandalwood Smoke Dissolving in Still Air',
+        desc: 'A straight ribbon of incense smoke slowly vanishing into the rafters without leaving a scar.',
+        reflection: 'Even sincere prayer leaves no scar upon the boundless sky.'
+      },
+      {
+        id: 'bamboo_broom',
+        odds: 95,
+        tier: 'common',
+        title: 'The Rhythm of the Bamboo Broom',
+        desc: 'Sweeping fallen Bodhi leaves at dawn, knowing the wind will scatter more by noon.',
+        reflection: 'We do not sweep to finish; we sweep to be present with each sweep.'
+      },
+      {
+        id: 'grandmother_rice',
+        odds: 180,
+        tier: 'uncommon',
+        title: 'Warm Steamed Rice from an Elder Grandmother’s Hands',
+        desc: 'An elderly woman kneels at the roadside, offering food with trembling, joyful hands.',
+        reflection: 'The monk receives nourishment; the giver receives joyful generosity. Both are fed.'
+      },
+      {
+        id: 'stranger_dawn_smile',
+        odds: 450,
+        tier: 'uncommon',
+        title: 'A Stranger’s Peaceful Smile on the Mist-Covered Bridge',
+        desc: 'No words spoken across the morning mist, yet both hearts suddenly feel weightless.',
+        reflection: 'Silence shared in kindness speaks deeper than a thousand sermons.'
+      },
+      {
+        id: 'rain_on_kuti',
+        odds: 900,
+        tier: 'uncommon',
+        title: 'Monsoon Rain Tapping the Thatched Kuti Roof',
+        desc: 'Sitting peacefully inside a bamboo hut, having nothing in the world to protect from the storm.',
+        reflection: 'When you possess nothing, the storm can never take anything away from you.'
+      },
+      {
+        id: 'temple_dog_friend',
+        odds: 2200,
+        tier: 'rare',
+        title: 'A Wary Temple Dog Falling Asleep Beside Your Robe',
+        desc: 'Once terrified of human footsteps, it gently rests its head upon your saffron cloth in absolute safety.',
+        reflection: 'Harmlessness is a language every living creature instinctively understands.'
+      },
+      {
+        id: 'thought_gap',
+        odds: 5500,
+        tier: 'rare',
+        title: 'The Silent Void Between Two Breaths',
+        desc: 'For three heartbeats, neither past regret nor future anxiety exists—only boundless stillness.',
+        reflection: 'Peace was never far away; it was merely waiting beneath the chatter.'
+      },
+      {
+        id: 'forgiven_wound',
+        odds: 12000,
+        tier: 'rare',
+        title: 'An Ancient Resentment Dissolving into Warm Ash',
+        desc: 'A past betrayal arises in quiet meditation, and for the first time, it no longer hurts at all.',
+        reflection: 'Forgiveness is simply setting down the burning coal you carried for someone else.'
+      },
+      {
+        id: 'ego_salt_dissolve',
+        odds: 28000,
+        tier: 'rare',
+        title: 'Ego Dissolving Like a Lump of Salt in the Ocean',
+        desc: 'The boundary between self and the forest wind softens until only pure awareness remains.',
+        reflection: 'A raindrop does not perish when it meets the sea; it becomes the ocean.'
+      },
+      {
+        id: 'cicada_unison',
+        odds: 75000,
+        tier: 'profound',
+        title: 'Midnight Forest Breathing in Perfect Unison',
+        desc: 'Cicadas, night owls, and your own heartbeat merge into a single seamless harmony.',
+        reflection: 'Solitude is never loneliness once the mind is reconciled with all things.'
+      },
+      {
+        id: 'gratitude_tears',
+        odds: 180000,
+        tier: 'profound',
+        title: 'Unbidden Tears of Boundless Gratitude',
+        desc: 'Looking down at a patched saffron robe and an iron bowl, realizing you lack nothing in the cosmos.',
+        reflection: 'True wealth is the complete cessation of craving.'
+      },
+      {
+        id: 'anatta_falling_leaf',
+        odds: 500000,
+        tier: 'profound',
+        title: 'Seeing Eternity in a Single Falling Bodhi Leaf',
+        desc: 'A golden leaf detaches; in its slow drift, birth, aging, and liberation are seen as one.',
+        reflection: 'Because all things pass, every fleeting breath is infinitely sacred.'
+      },
+      {
+        id: 'lake_stillness',
+        odds: 1400000,
+        tier: 'profound',
+        title: 'Mind as a Mirror-Lake Reflecting the Full Moon',
+        desc: 'The candle does not flicker. The mind is a waveless mountain lake reflecting the unblemished moon.',
+        reflection: 'When the mud settles, the water needs no effort to be clear.'
+      },
+      {
+        id: 'metta_infinite',
+        odds: 5000000,
+        tier: 'transcendent',
+        title: 'Boundless Metta Embracing Ten Thousand Worlds',
+        desc: 'Every creature in the mud, every weary soul in distant cities, felt as intimately as your own heart.',
+        reflection: 'To love without seeking possession is how humans touch the infinite.'
+      },
+      {
+        id: 'sunyata_luminous',
+        odds: 18000000,
+        tier: 'transcendent',
+        title: 'Sunyata · The Luminous Radiance of Emptiness',
+        desc: 'Light and shadow dance through vast space; nothing to grasp, nothing to lose, nothing to fear.',
+        reflection: 'Emptiness is not nothingness—it is the open sky that lets everything exist.'
+      },
+      {
+        id: 'nibbana_ultimate',
+        odds: 65000000,
+        tier: 'transcendent',
+        title: 'Nirvana · The Unconditioned Peace (1 in 65,000,000)',
+        desc: 'Beyond words, beyond time, beyond self: the cool, inextinguishable peace of Nirvana.',
+        reflection: 'You searched the cosmos for beauty, only to find it was the stillness looking through your eyes.'
+      }
+    ];
+
+    // --- 4. MONK IDENTITY & TEMPLE TRADITIONS ---
+    const PROVINCES = [
+      { name: 'Chiang Mai', style: 'Mountain Forest Hermitage on Doi Suthep' },
+      { name: 'Ubon Ratchathani', style: 'Forest Hermitage in the Tradition of Ajahn Chah' },
+      { name: 'Sukhothai', style: 'Ancient Lotus Pond Temple' },
+      { name: 'Ayutthaya', style: 'Historic Chao Phraya Riverbank Monastery' },
+      { name: 'Sakon Nakhon', style: 'Phu Phan Mountain Forest Hermitage' },
+      { name: 'Surat Thani', style: 'Suan Mokkh Garden of Liberation' },
+      { name: 'Nan', style: 'Quiet Mist Valley Monastery' },
+      { name: 'Kanchanaburi', style: 'River Cave Hermitage along the River Kwai' }
+    ];
+
+    const CHAYAS = [
+      { name: 'Phra Thitasaddho', meaning: 'Steadfast in Unshakable Faith' },
+      { name: 'Phra Santikaro', meaning: 'Bringer of Peace and Stillness' },
+      { name: 'Phra Nyanavaro', meaning: 'Adorned with Noble Wisdom' },
+      { name: 'Phra Chitamaro', meaning: 'Conqueror of Delusion and Greed' },
+      { name: 'Phra Khemadhammo', meaning: 'Dweller in the Abode of Peace' },
+      { name: 'Phra Anando', meaning: 'Rejoicing in the Bliss of Dhamma' },
+      { name: 'Phra Suddhinyano', meaning: 'Clear Insight of Pure Vision' }
+    ];
+
+    const TEMPLE_TYPES = [
+      {
+        id: 'forest',
+        title: 'Path I · The Forest Hermitage (Wat Pa)',
+        desc: 'Simplicity, secluded mountain huts, mindful walking, and living harmoniously with wild nature.'
+      },
+      {
+        id: 'village',
+        title: 'Path II · The Village Community Temple (Wat Ban)',
+        desc: 'Close connection to everyday villagers, morning alms walks, blessings, and social compassion.'
+      },
+      {
+        id: 'academic',
+        title: 'Path III · The Dhamma Scholastic Temple (Wat Luang)',
+        desc: 'Study of ancient Pali scriptures, canonical commentaries, and profound doctrinal exposition.'
+      }
+    ];
+
+    // --- 5. MONASTIC STORYLINE ENCOUNTERS (100% ENGLISH) ---
+    const ENCOUNTER_EVENTS = [
+      {
+        id: 'enc_weeping_father',
+        minVassa: 1,
+        title: 'The Grieving Father at the Pier',
+        location: 'Temple River Pier at Mid-Morning',
+        text: [
+          "A young man sits weeping by the river pier, having lost his most beloved family member the night before.",
+          "Seeing your saffron robe, he looks up with hollow, red-rimmed eyes: 'Venerable Sir... why must everything we cherish slip away into grief?'"
+        ],
+        choices: [
+          {
+            label: 'Sit silently beside him, radiating peaceful loving-kindness',
+            sub: '+15 Metta (Compassion), +5 Sati · Presence is the deepest medicine',
+            apply: (s) => { s.metta += 15; s.sati += 5; s.clarityBonus += 0.15; },
+            outcome: "You spoke no sermons. You simply stayed beside him on the damp grass until his sobs quieted into gentle breathing. Presence heals where words cannot."
+          },
+          {
+            label: 'Gently invite him to watch the flowing river that never returns',
+            sub: '+15 Panna (Wisdom), +5 Vinaya · Teach the truth of impermanence',
+            apply: (s) => { s.panna += 15; s.vinaya = Math.min(100, s.vinaya + 5); s.clarityBonus += 0.15; },
+            outcome: "'Look at the river,' you whisper. 'It flows without holding back. Grasping the current only tires our hands.' A faint light of peace touches his eyes."
+          }
+        ]
+      },
+      {
+        id: 'enc_million_baht_donation',
+        minVassa: 2,
+        title: 'The Wealthy Patron & The Golden Donation',
+        location: 'The Temple Pavilion',
+        text: [
+          "A wealthy tycoon arrives at your kuti offering an immense donation, asking you to consecrate amulets and divine auspicious fortunes for his business ventures.",
+          "This fortune could rebuild the temple, but monastic discipline strictly warns against commercial greed, superstition, and corrupting the pure Dhamma."
+        ],
+        choices: [
+          {
+            label: 'Politely refuse the occult request; teach right livelihood instead',
+            sub: '+20 Vinaya, +15 Panna · Uncorrupted moral purity',
+            apply: (s) => { s.vinaya = Math.min(100, s.vinaya + 20); s.panna += 15; s.clarityBonus += 0.25; },
+            outcome: "You smiled gently: 'Your success lies not in magical trinkets, but in honesty, diligence, and ethical conduct.' The patron paused, humbled by authentic Dhamma."
+          },
+          {
+            label: 'Accept into hospital fund purely for charity, refusing any superstitions',
+            sub: '+20 Metta, -5 Sati · Worldly engagement for others',
+            apply: (s) => { s.metta += 20; s.sati = Math.max(10, s.sati - 5); },
+            outcome: "You channeled the wealth directly to poor patients in the local hospital without touching a coin. Many lives were healed, though crowds swarmed the gate for a while."
+          }
+        ]
+      },
+      {
+        id: 'enc_forest_tiger_cave',
+        minVassa: 4,
+        title: 'The Great King Cobra in the Deep Cave',
+        location: 'Limestone Cave in Deep Jungle, Kanchanaburi',
+        text: [
+          "During midnight cave meditation, a rhythmic rustling of dry leaves approaches across the damp cavern floor.",
+          "Under dim candlelight, an immense King Cobra raises its hood merely two feet from your crossed knees, its dark eyes fixed upon you."
+        ],
+        choices: [
+          {
+            label: 'Close eyes, remain motionless, radiate unconditional Metta',
+            sub: '+25 Sati, +20 Metta · Transcending the fear of death',
+            apply: (s) => { s.sati += 25; s.metta += 20; s.clarityBonus += 0.35; },
+            outcome: "Letting go of fear, your breath turned to pure stillness. Feeling no hostility, the great serpent lowered its hood and glided peacefully into the dark."
+          },
+          {
+            label: 'Stand slowly and step back mindfully, respecting its territory',
+            sub: '+15 Panna, +10 Kaya (Health) · Wise caution',
+            apply: (s) => { s.panna += 15; s.health = Math.min(100, s.health + 10); },
+            outcome: "Moving like a drifting feather, you stepped outside to the cave mouth. Living harmlessly with wild beings, you sat beneath starlight until dawn."
+          }
+        ]
+      },
+      {
+        id: 'enc_old_sweetheart_visit',
+        minVassa: 3,
+        title: 'A Memory of Former Love',
+        location: 'The Morning Pavilion',
+        text: [
+          "Among the villagers offering food, you recognize your former love from secular life before you took monastic vows.",
+          "She places sweet coconut rice into your bowl with trembling hands, her eyes holding traces of shared youth and unspoken longing."
+        ],
+        choices: [
+          {
+            label: 'Give blessings with noble restraint, seeing her as a companion in Samsara',
+            sub: '+20 Vinaya, +15 Sati · Pure equanimity',
+            apply: (s) => { s.vinaya = Math.min(100, s.vinaya + 20); s.sati += 15; s.clarityBonus += 0.2; },
+            outcome: "Keeping eyes gently lowered, you chanted the blessing with unwavering stillness, wishing her genuine happiness. Ancient clinging dissolved into pure goodwill."
+          },
+          {
+            label: 'Inquire kindly about her well-being and her family’s peace',
+            sub: '+15 Metta, -5 Vinaya · Guarding the heart',
+            apply: (s) => { s.metta += 15; s.vinaya = Math.max(10, s.vinaya - 5); },
+            outcome: "Hearing that she is happy and well, you rejoiced in her joy. A brief wave stirred the heart, yet was quickly anchored back to the present breath."
+          }
+        ]
+      },
+      {
+        id: 'enc_elder_abbot_passing',
+        minVassa: 8,
+        title: 'The Final Whisper of the Elder Upajjhaya',
+        location: 'The Master’s Wooden Cell',
+        text: [
+          "Your 94-year-old Upajjhaya, who shaved your head and guided your path, lies serenely on a thin woven mat, breaths growing soft.",
+          "Opening his eyes, he touches your hand with frail warmth and whispers: 'In all these years of wearing saffron cloth... what did you see?'"
+        ],
+        choices: [
+          {
+            label: 'Bow silently to his lap, answering with profound silence',
+            sub: '+30 Panna, +20 Sati · Beyond all concepts',
+            apply: (s) => { s.panna += 30; s.sati += 20; s.clarityBonus += 0.4; },
+            outcome: "A radiant smile creased the old monk's face: 'Good... you did not spill a single drop.' He entered eternal peace as wild jasmine scent filled the quiet hut."
+          },
+          {
+            label: '"I saw that everything is borrowed; nothing belongs to us, Master."',
+            sub: '+25 Panna, +20 Metta · Liberation through letting go',
+            apply: (s) => { s.panna += 25; s.metta += 20; s.clarityBonus += 0.35; },
+            outcome: "The master nodded weakly: 'Knowing this, live for the peace of all beings.' His parting blessing became an eternal lantern in your soul."
+          }
+        ]
+      }
+    ];
+
+    // --- 6. GAME STATE & LOCALSTORAGE ---
+    const DEFAULT_GAME_STATE = {
+      ordained: false,
+      monkName: 'Phra Thitasaddho',
+      monkMeaning: 'Steadfast in Unshakable Faith',
+      templeType: 'forest',
+      province: PROVINCES[0],
+      vassa: 0,
+      day: 0,
+      vinaya: 100,
+      sati: 35,
+      panna: 25,
+      metta: 30,
+      health: 85,
+      stillnessGauge: 0, // 0 to 100
+      clarityBonus: 0,
+      discoveredWonders: {},
+      seenEvents: [],
+      activeEvent: null,
+      rarestFoundOdds: 0,
+      rarestFoundTitle: 'None yet'
+    };
+
+    let state = loadGameState();
+    let isHoldingBreath = false;
+    let breathInterval = null;
+    let autoInterval = null;
+
+    function loadGameState() {
+      try {
+        const saved = localStorage.getItem('beauty_of_monk_save_en');
+        if (saved) {
+          return { ...DEFAULT_GAME_STATE, ...JSON.parse(saved) };
+        }
+      } catch (e) {}
+      return JSON.parse(JSON.stringify(DEFAULT_GAME_STATE));
+    }
+
+    function saveGameState() {
+      try {
+        localStorage.setItem('beauty_of_monk_save_en', JSON.stringify(state));
+      } catch (e) {}
+    }
+
+    // --- 7. PROBABILITY & CLARITY ENGINE ---
+    function getClarityMultiplier() {
+      const virtueSum = ((state.sati + state.panna + state.metta) / 100) * 0.45;
+      const breathBonus = (state.stillnessGauge / 100) * 1.5;
+      const total = 1.0 + virtueSum + breathBonus + state.clarityBonus;
+      return Math.min(3.5, Math.max(1.0, total));
+    }
+
+    function rollSerenityWonder() {
+      const clarity = getClarityMultiplier();
+      const sorted = [...ALMANAC_POOL].sort((a, b) => b.odds - a.odds);
+
+      for (const item of sorted) {
+        const effectiveOdds = Math.max(1.5, item.odds / clarity);
+        if (Math.random() * effectiveOdds < 1.0) {
+          return item;
+        }
+      }
+      return ALMANAC_POOL[0];
+    }
+
+    function recordWonder(item) {
+      let isNew = false;
+      if (!state.discoveredWonders[item.id]) {
+        state.discoveredWonders[item.id] = {
+          count: 1,
+          firstDay: state.day
+        };
+        isNew = true;
+      } else {
+        state.discoveredWonders[item.id].count += 1;
+      }
+
+      if (item.odds > state.rarestFoundOdds) {
+        state.rarestFoundOdds = item.odds;
+        state.rarestFoundTitle = `1 in ${item.odds.toLocaleString()} · ${item.title}`;
+      }
+
+      if (isNew) {
+        if (item.odds >= 10000) state.panna += 3;
+        else if (item.odds >= 500) state.sati += 2;
+        else state.metta += 1;
+      }
+
+      return isNew;
+    }
+
+    // --- 8. ORDINATION SETUP & CONFIRMATION ---
+    function renderOrdinationSetup() {
+      const container = document.getElementById('storyContent');
+      const choices = document.getElementById('choicesArea');
+
+      document.getElementById('tagTimeOfDay').textContent = "PROLOGUE · THE TEMPLE GATES";
+      document.getElementById('tagLocation').textContent = "Before the Ordination Hall";
+
+      container.innerHTML = `
+        <p class="animate-fadeIn">You stand before the weathered gateway of an ancient Thai monastery, the noise of worldly chasing falling quiet behind you.</p>
+        <p class="animate-fadeIn" style="animation-delay: 0.15s">Behind lies endless ambition, measuring, and anxiety. Ahead lies only an iron alms bowl, three saffron robes, and the gentle stillness of the Buddha's smile.</p>
+        <p class="animate-fadeIn text-[#e59819] font-medium" style="animation-delay: 0.3s">Among sixty-five million lives in this land, what serene beauty awaits when you finally let go?</p>
+      `;
+
+      choices.innerHTML = `
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+          <button onclick="confirmOrdination('forest')" class="monk-btn p-3.5 rounded-xl inner-card border border-[#e59819]/40 text-left flex flex-col gap-1">
+            <span class="text-xs font-mono-num text-[#e59819] font-bold">PATH I</span>
+            <span class="text-sm font-semibold text-[#ede6d8]">The Forest Hermitage</span>
+            <span class="text-xs text-[#a39c8e]">${TEMPLE_TYPES[0].desc}</span>
+          </button>
+          <button onclick="confirmOrdination('village')" class="monk-btn p-3.5 rounded-xl inner-card border border-[#528c6e]/40 text-left flex flex-col gap-1">
+            <span class="text-xs font-mono-num text-[#528c6e] font-bold">PATH II</span>
+            <span class="text-sm font-semibold text-[#ede6d8]">The Village Temple</span>
+            <span class="text-xs text-[#a39c8e]">${TEMPLE_TYPES[1].desc}</span>
+          </button>
+          <button onclick="confirmOrdination('academic')" class="monk-btn p-3.5 rounded-xl inner-card border border-[#d4a373]/40 text-left flex flex-col gap-1">
+            <span class="text-xs font-mono-num text-[#d4a373] font-bold">PATH III</span>
+            <span class="text-sm font-semibold text-[#ede6d8]">The Scholastic Temple</span>
+            <span class="text-xs text-[#a39c8e]">${TEMPLE_TYPES[2].desc}</span>
+          </button>
+        </div>
+      `;
+    }
+
+    function confirmOrdination(typeKey) {
+      audio.playSingingBowl(500);
+
+      const chaya = CHAYAS[Math.floor(Math.random() * CHAYAS.length)];
+      const prov = PROVINCES[Math.floor(Math.random() * PROVINCES.length)];
+
+      state.ordained = true;
+      state.templeType = typeKey;
+      state.monkName = chaya.name;
+      state.monkMeaning = chaya.meaning;
+      state.province = prov;
+      state.vassa = 1;
+      state.day = 1;
+      state.vinaya = 100;
+      state.sati = typeKey === 'forest' ? 38 : (typeKey === 'academic' ? 26 : 30);
+      state.panna = typeKey === 'academic' ? 35 : 22;
+      state.metta = typeKey === 'village' ? 38 : 26;
+      state.health = 85;
+
+      const firstWonder = ALMANAC_POOL[0];
+      recordWonder(firstWonder);
+
+      saveGameState();
+      renderAll();
+      showWonderBanner(firstWonder, true);
+
+      setStoryText(
+        "VASSA 1 · THE ORDINATION",
+        [
+          `The last strand of dark hair falls upon a lotus leaf. With each gentle snip of the elder's shears, worldly burdens and restless striving fall away.`,
+          `Clothed in three pieces of saffron cloth and carrying a cold iron alms bowl, you receive your monastic Chaya name: "${state.monkName}" (${state.monkMeaning}).`,
+          `Ordained at ${prov.style} in ${prov.name}. Every breath from this moment forward is an invitation to witness the sacred in the ordinary.`
+        ]
+      );
+    }
+
+    // --- 9. MONASTIC PRACTICES & PASSING TIME ---
+    function doAlmsWalk() {
+      audio.playWoodBlock();
+      advanceTime(
+        "DAWN · MORNING ALMS (BINTHABAT)",
+        "Village Lane in Morning Mist",
+        [
+          "Walking single-file along the misty lane at 6:00 AM, bare feet meeting cool dust. The iron bowl warms with freshly steamed sticky rice offered with pure reverence by elderly villagers."
+        ],
+        { sati: 3, metta: 4, health: -2 }
+      );
+    }
+
+    function doMeditation() {
+      audio.playSingingBowl(300);
+      advanceTime(
+        "AFTERNOON · MEDITATION (BHAVANA)",
+        "Under the Shady Banyan Tree",
+        [
+          "Sitting cross-legged on a woven reed mat. Breathing in, knowing breath. Breathing out, letting thoughts dissolve like clouds across an unrippled sky."
+        ],
+        { sati: 6, panna: 4, health: 3 }
+      );
+    }
+
+    function doTempleChores() {
+      audio.playWoodBlock();
+      advanceTime(
+        "EVENING · CHANTING & SWEEPING",
+        "The Pagoda Courtyard",
+        [
+          "Sweeping fallen Bodhi leaves around the ancient pagoda. As dusk falls, resonant Pali chants echo across the hall, vibrating deep within the chest."
+        ],
+        { vinaya: 2, metta: 3, sati: 2 }
+      );
+    }
+
+    function doTudongPilgrimage() {
+      audio.playSingingBowl(2500);
+      advanceTime(
+        "NIGHT · FOREST TUDONG PILGRIMAGE",
+        "Wild Mountain Solitude",
+        [
+          "Pitched your umbrella tent (glod) beneath towering forest trees. Surrounded by absolute wilderness, the mind becomes fearless, luminous, and deeply still."
+        ],
+        { panna: 7, sati: 5, health: -4 }
+      );
+    }
+
+    function advanceTime(title, location, paragraphs, statDeltas) {
+      if (state.activeEvent) return;
+
+      state.day += 1;
+      if (state.day % 30 === 0) {
+        state.vassa += 1;
+      }
+
+      if (statDeltas) {
+        if (statDeltas.vinaya) state.vinaya = Math.min(100, Math.max(0, state.vinaya + statDeltas.vinaya));
+        if (statDeltas.sati) state.sati = Math.min(100, Math.max(0, state.sati + statDeltas.sati));
+        if (statDeltas.panna) state.panna = Math.min(100, Math.max(0, state.panna + statDeltas.panna));
+        if (statDeltas.metta) state.metta = Math.min(100, Math.max(0, state.metta + statDeltas.metta));
+        if (statDeltas.health) state.health = Math.min(100, Math.max(5, state.health + statDeltas.health));
+      }
+
+      state.stillnessGauge = Math.max(0, state.stillnessGauge - 6);
+
+      const wonder = rollSerenityWonder();
+      const isNew = recordWonder(wonder);
+
+      const ev = checkStoryEventTrigger();
+      if (ev) {
+        state.activeEvent = ev;
+        saveGameState();
+        renderAll();
+        showWonderBanner(wonder, isNew);
+        renderEventDialogue(ev);
+        return;
+      }
+
+      document.getElementById('tagTimeOfDay').textContent = title;
+      document.getElementById('tagLocation').textContent = location;
+      setStoryText(title, paragraphs);
+
+      saveGameState();
+      renderAll();
+      showWonderBanner(wonder, isNew);
+    }
+
+    function checkStoryEventTrigger() {
+      for (const ev of ENCOUNTER_EVENTS) {
+        if (state.vassa >= ev.minVassa && !state.seenEvents.includes(ev.id)) {
+          if (Math.random() < 0.28) {
+            return ev;
+          }
+        }
+      }
+      return null;
+    }
+
+    function renderEventDialogue(ev) {
+      document.getElementById('tagTimeOfDay').textContent = "TEST OF SPIRIT · ENCOUNTER";
+      document.getElementById('tagLocation').textContent = ev.location;
+
+      setStoryText(ev.title, ev.text);
+
+      const choicesArea = document.getElementById('choicesArea');
+      choicesArea.innerHTML = '';
+
+      ev.choices.forEach((choice, idx) => {
+        const btn = document.createElement('button');
+        btn.className = 'monk-btn w-full text-left p-3.5 sm:p-4 rounded-xl inner-card border border-[#e59819]/35 flex flex-col gap-1 cursor-pointer';
+        btn.innerHTML = `
+          <span class="text-sm sm:text-base font-semibold text-[#ede6d8]">${choice.label}</span>
+          <span class="text-xs font-mono-num text-[#e59819]">${choice.sub}</span>
+        `;
+        btn.addEventListener('click', () => resolveEventChoice(idx));
+        choicesArea.appendChild(btn);
+      });
+    }
+
+    function resolveEventChoice(idx) {
+      const ev = state.activeEvent;
+      if (!ev) return;
+      const choice = ev.choices[idx];
+      if (!choice) return;
+
+      audio.playSingingBowl(2000);
+      choice.apply(state);
+
+      state.seenEvents.push(ev.id);
+      state.activeEvent = null;
+
+      saveGameState();
+      renderAll();
+
+      document.getElementById('tagTimeOfDay').textContent = "OUTCOME · RESOLVED";
+      setStoryText(ev.title, [choice.outcome]);
+    }
+
+    // --- 10. UI RENDERING ENGINE ---
+    function setStoryText(heading, paragraphs) {
+      const container = document.getElementById('storyContent');
+      container.innerHTML = '';
+      paragraphs.forEach((p, idx) => {
+        const el = document.createElement('p');
+        el.className = 'animate-fadeIn';
+        el.style.animationDelay = `${idx * 0.12}s`;
+        el.textContent = p;
+        container.appendChild(el);
+      });
+    }
+
+    function showWonderBanner(item, isNew) {
+      const banner = document.getElementById('wonderBanner');
+      banner.classList.remove('hidden');
+
+      banner.classList.remove('animate-fadeIn');
+      void banner.offsetWidth;
+      banner.classList.add('animate-fadeIn');
+
+      if (item.odds >= 50000) {
+        banner.classList.add('pulse-gold');
+      } else {
+        banner.classList.remove('pulse-gold');
+      }
+
+      const oddsBadge = document.getElementById('wonderOddsBadge');
+      oddsBadge.textContent = `1 in ${item.odds.toLocaleString()}`;
+      oddsBadge.className = `px-2.5 py-0.5 rounded-full border text-xs font-mono-num tracking-wider badge-${item.tier}`;
+
+      const newPill = document.getElementById('wonderNewPill');
+      if (isNew) newPill.classList.remove('hidden');
+      else newPill.classList.add('hidden');
+
+      document.getElementById('wonderMomentNum').textContent = `MOMENT #${Object.keys(state.discoveredWonders).length}`;
+      document.getElementById('wonderTitle').textContent = item.title;
+      document.getElementById('wonderDesc').textContent = `"${item.desc}"`;
+    }
+
+    function renderAll() {
+      const monkIdentityBar = document.getElementById('monkIdentityBar');
+      const virtuesContainer = document.getElementById('virtuesContainer');
+      const dailyPracticeHub = document.getElementById('dailyPracticeHub');
+      const breathTrainerSection = document.getElementById('breathTrainerSection');
+      const btnDisrobeEarly = document.getElementById('btnDisrobeEarly');
+      const btnAutoContemplate = document.getElementById('btnAutoContemplate');
+
+      if (!state.ordained) {
+        monkIdentityBar.classList.add('hidden');
+        virtuesContainer.classList.add('hidden');
+        dailyPracticeHub.classList.add('hidden');
+        breathTrainerSection.classList.add('hidden');
+        btnDisrobeEarly.classList.add('hidden');
+        btnAutoContemplate.classList.add('hidden');
+        renderOrdinationSetup();
+        return;
+      }
+
+      monkIdentityBar.classList.remove('hidden');
+      virtuesContainer.classList.remove('hidden');
+      breathTrainerSection.classList.remove('hidden');
+      btnDisrobeEarly.classList.remove('hidden');
+      btnAutoContemplate.classList.remove('hidden');
+
+      document.getElementById('hudMonkName').textContent = state.monkName;
+      const templeObj = TEMPLE_TYPES.find(t => t.id === state.templeType) || TEMPLE_TYPES[0];
+      document.getElementById('hudTempleLineage').textContent = templeObj.title.split(' · ')[1];
+      document.getElementById('hudMonkOrigin').textContent = `Ordained at ${state.province.style}, ${state.province.name}`;
+
+      document.getElementById('hudVassa').textContent = state.vassa;
+      document.getElementById('hudDay').textContent = state.day;
+      document.getElementById('hudClarity').textContent = getClarityMultiplier().toFixed(2) + 'x';
+
+      document.getElementById('valVinaya').textContent = state.vinaya;
+      document.getElementById('barVinaya').style.width = `${state.vinaya}%`;
+
+      document.getElementById('valSati').textContent = state.sati;
+      document.getElementById('barSati').style.width = `${state.sati}%`;
+
+      document.getElementById('valPanna').textContent = state.panna;
+      document.getElementById('barPanna').style.width = `${state.panna}%`;
+
+      document.getElementById('valMetta').textContent = state.metta;
+      document.getElementById('barMetta').style.width = `${state.metta}%`;
+
+      document.getElementById('valHealth').textContent = state.health;
+      document.getElementById('barHealth').style.width = `${state.health}%`;
+
+      document.getElementById('valRarestBadge').textContent = state.rarestFoundTitle;
+
+      const count = Object.keys(state.discoveredWonders).length;
+      document.getElementById('txtAlmanacCount').textContent = `${count}/${ALMANAC_POOL.length}`;
+
+      document.getElementById('breathGaugeFill').style.width = `${state.stillnessGauge}%`;
+
+      if (state.activeEvent) {
+        dailyPracticeHub.classList.add('hidden');
+      } else {
+        dailyPracticeHub.classList.remove('hidden');
+        renderChoicesArea();
+      }
+    }
+
+    function renderChoicesArea() {
+      const choicesArea = document.getElementById('choicesArea');
+      choicesArea.innerHTML = '';
+
+      if (state.activeEvent) {
+        renderEventDialogue(state.activeEvent);
+        return;
+      }
+
+      const row = document.createElement('div');
+      row.className = 'flex items-center justify-between gap-3';
+
+      const btnStep = document.createElement('button');
+      btnStep.className = 'monk-btn flex-1 px-5 py-3 rounded-xl border border-[#e59819]/50 bg-[#e59819]/15 text-[#ede6d8] text-sm sm:text-base font-semibold flex items-center justify-center gap-2';
+      btnStep.innerHTML = `
+        <span>Take a Mindful Breath & Step</span>
+        <span class="text-xs font-mono-num text-[#e59819]">[Space]</span>
+      `;
+      btnStep.addEventListener('click', () => {
+        advanceTime(
+          "MOMENT OF STILLNESS · MINDFULNESS",
+          "Temple Sanctuary Courtyard",
+          [
+            "Aware of each quiet step, the cool breath gently touching the upper lip. In the simplicity of the saffron robe, worldly weight softens into lightness."
+          ],
+          { sati: 2 }
+        );
+      });
+
+      row.appendChild(btnStep);
+      choicesArea.appendChild(row);
+    }
+
+    // --- 11. HOLD TO SETTLE MIND (BREATH MINI-GAME) ---
+    function startHoldingBreath() {
+      if (!state.ordained || isHoldingBreath) return;
+      isHoldingBreath = true;
+      document.getElementById('lblHoldBreatheText').textContent = "Breathing in stillness...";
+      audio.playSingingBowl(200);
+
+      breathInterval = setInterval(() => {
+        if (state.stillnessGauge < 100) {
+          state.stillnessGauge = Math.min(100, state.stillnessGauge + 3.5);
+          document.getElementById('breathGaugeFill').style.width = `${state.stillnessGauge}%`;
+          document.getElementById('hudClarity').textContent = getClarityMultiplier().toFixed(2) + 'x';
+        }
+      }, 90);
+    }
+
+    function stopHoldingBreath() {
+      if (!isHoldingBreath) return;
+      isHoldingBreath = false;
+      clearInterval(breathInterval);
+      document.getElementById('lblHoldBreatheText').textContent = "Hold to Settle Mind";
+      saveGameState();
+    }
+
+    // --- 12. ALMANAC MODAL ---
+    function openAlmanac() {
+      const modal = document.getElementById('almanacModal');
+      const list = document.getElementById('almanacListContainer');
+      const count = Object.keys(state.discoveredWonders).length;
+
+      document.getElementById('txtModalProgress').textContent = `${count} / ${ALMANAC_POOL.length}`;
+      list.innerHTML = '';
+
+      ALMANAC_POOL.forEach((item) => {
+        const record = state.discoveredWonders[item.id];
+        const card = document.createElement('div');
+
+        if (record) {
+          card.className = 'p-3.5 sm:p-4 rounded-xl inner-card border border-[#ede6d8]/15 space-y-1.5 animate-fadeIn';
+          card.innerHTML = `
+            <div class="flex items-center justify-between gap-2">
+              <span class="px-2.5 py-0.5 rounded-full border text-xs font-mono-num badge-${item.tier}">
+                1 in ${item.odds.toLocaleString()}
+              </span>
+              <span class="text-[11px] font-mono-num text-[#a39c8e]">
+                Witnessed ${record.count}x · First on Day ${record.firstDay}
+              </span>
+            </div>
+            <h4 class="text-base sm:text-lg font-bold text-[#ede6d8]">${item.title}</h4>
+            <p class="text-xs sm:text-sm text-[#ede6d8]/85 italic">"${item.desc}"</p>
+            <p class="text-[11px] text-[#528c6e] pt-1">🍃 ${item.reflection}</p>
+          `;
+        } else {
+          card.className = 'p-3.5 rounded-xl inner-card border border-[#ede6d8]/5 opacity-50 flex items-center justify-between text-xs font-mono-num text-[#a39c8e]';
+          card.innerHTML = `
+            <div>
+              <span>1 in ${item.odds.toLocaleString()}</span>
+              <h5 class="italic text-[#a39c8e]/80 mt-0.5">[Undiscovered Stillness]</h5>
+            </div>
+            <span>🔒</span>
+          `;
+        }
+
+        list.appendChild(card);
+      });
+
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeAlmanac() {
+      const modal = document.getElementById('almanacModal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    // --- 13. ENDING & SUMMARY CERTIFICATE ---
+    function triggerDisrobeOrEnding() {
+      const modal = document.getElementById('summaryModal');
+      const titleEl = document.getElementById('txtSummaryTitle');
+      const subEl = document.getElementById('txtSummarySubtitle');
+      const storyEl = document.getElementById('txtSummaryStory');
+
+      document.getElementById('sumName').textContent = state.monkName;
+      document.getElementById('sumVassa').textContent = `${state.vassa} Vassa (${state.day} Days)`;
+      document.getElementById('sumRarest').textContent = state.rarestFoundOdds > 0 ? `1 in ${state.rarestFoundOdds.toLocaleString()}` : "None";
+      document.getElementById('sumMerit').textContent = (state.panna + state.metta > 120) ? "Boundless Virtue & Merit" : "Pure & Honorable";
+
+      if (state.rarestFoundOdds >= 65000000) {
+        titleEl.textContent = "The Liberated Sage · Nirvana";
+        subEl.textContent = "Completely Free from the Ocean of Samsara (1 in 65,000,000)";
+        storyEl.textContent = "Having extinguished all cravings, your mind touched the unconditioned, deathless radiance of Nirvana. A blessing to gods and humans across sixty-five million lives.";
+      } else if (state.vassa >= 15) {
+        titleEl.textContent = "Venerated Master of the Mountain";
+        subEl.textContent = "Elder of Boundless Wisdom & Compassion";
+        storyEl.textContent = `For ${state.vassa} Vassa, you held the pure vinaya without blemish, mentoring generations of novices and bringing tranquility to the weary world.`;
+      } else {
+        titleEl.textContent = "Noble Return to Lay Life";
+        subEl.textContent = "Carrying the Light of Stillness Back to the World";
+        storyEl.textContent = `Though disrobing back to worldly affairs, the mindfulness, patience, and peace cultivated over ${state.day} days remain an indestructible compass for a righteous and fulfilled life.`;
+      }
+
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    // --- 14. INITIALIZATION & EVENT HANDLERS ---
+    window.addEventListener('DOMContentLoaded', () => {
+      const canvas = document.getElementById('ambientCanvas');
+      const scene = new ParticleScene(canvas);
+      scene.render();
+
+      renderAll();
+
+      // Audio Toggle
+      document.getElementById('btnAudioToggle').addEventListener('click', () => {
+        audio.muted = !audio.muted;
+        document.getElementById('iconSoundOn').classList.toggle('hidden', audio.muted);
+        document.getElementById('iconSoundOff').classList.toggle('hidden', !audio.muted);
+        if (!audio.muted) audio.playSingingBowl(300);
+      });
+
+      // Phone Link Modal
+      const phoneModal = document.getElementById('phoneModal');
+      document.getElementById('btnPhoneQR').addEventListener('click', () => {
+        phoneModal.classList.remove('hidden');
+        phoneModal.classList.add('flex');
+      });
+      document.getElementById('btnClosePhone').addEventListener('click', () => {
+        phoneModal.classList.add('hidden');
+        phoneModal.classList.remove('flex');
+      });
+      phoneModal.addEventListener('click', (e) => {
+        if (e.target.id === 'phoneModal') {
+          phoneModal.classList.add('hidden');
+          phoneModal.classList.remove('flex');
+        }
+      });
+      document.getElementById('btnCopyPhoneUrl').addEventListener('click', () => {
+        const input = document.getElementById('txtPublicPhoneUrl');
+        input.select();
+        navigator.clipboard.writeText(input.value).then(() => {
+          document.getElementById('btnCopyPhoneUrl').textContent = "Copied!";
+          setTimeout(() => {
+            document.getElementById('btnCopyPhoneUrl').textContent = "Copy";
+          }, 2000);
+        });
+      });
+
+      // Almanac Modal
+      document.getElementById('btnOpenAlmanac').addEventListener('click', openAlmanac);
+      document.getElementById('btnCloseAlmanac').addEventListener('click', closeAlmanac);
+      document.getElementById('almanacModal').addEventListener('click', (e) => {
+        if (e.target.id === 'almanacModal') closeAlmanac();
+      });
+
+      // Daily Activity Buttons
+      document.getElementById('btnActionAlms').addEventListener('click', doAlmsWalk);
+      document.getElementById('btnActionMeditation').addEventListener('click', doMeditation);
+      document.getElementById('btnActionChores').addEventListener('click', doTempleChores);
+      document.getElementById('btnActionPilgrimage').addEventListener('click', doTudongPilgrimage);
+
+      // Hold to Breathe (Touch & Mouse)
+      const btnBreathe = document.getElementById('btnHoldBreathe');
+      btnBreathe.addEventListener('mousedown', startHoldingBreath);
+      btnBreathe.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        startHoldingBreath();
+      }, { passive: false });
+
+      window.addEventListener('mouseup', stopHoldingBreath);
+      window.addEventListener('touchend', stopHoldingBreath);
+
+      // Auto Contemplate Toggle
+      const btnAuto = document.getElementById('btnAutoContemplate');
+      btnAuto.addEventListener('click', () => {
+        if (autoInterval) {
+          clearInterval(autoInterval);
+          autoInterval = null;
+          btnAuto.textContent = "[Auto-Contemplate: OFF]";
+          btnAuto.classList.remove('text-[#e59819]');
+        } else {
+          btnAuto.textContent = "[Auto-Contemplate: ON]";
+          btnAuto.classList.add('text-[#e59819]');
+          autoInterval = setInterval(() => {
+            if (state.ordained && !state.activeEvent) {
+              const acts = [doAlmsWalk, doMeditation, doTempleChores];
+              const randomAct = acts[Math.floor(Math.random() * acts.length)];
+              randomAct();
+            }
+          }, 2800);
+        }
+      });
+
+      // Disrobe Button
+      document.getElementById('btnDisrobeEarly').addEventListener('click', triggerDisrobeOrEnding);
+
+      // Reset Modal Handlers
+      const resetModal = document.getElementById('confirmRestartModal');
+      document.getElementById('btnResetAll').addEventListener('click', () => {
+        resetModal.classList.remove('hidden');
+        resetModal.classList.add('flex');
+      });
+      document.getElementById('btnCancelReset').addEventListener('click', () => {
+        resetModal.classList.add('hidden');
+        resetModal.classList.remove('flex');
+      });
+      document.getElementById('btnConfirmReset').addEventListener('click', () => {
+        if (autoInterval) {
+          clearInterval(autoInterval);
+          autoInterval = null;
+        }
+        localStorage.removeItem('beauty_of_monk_save_en');
+        state = JSON.parse(JSON.stringify(DEFAULT_GAME_STATE));
+        resetModal.classList.add('hidden');
+        resetModal.classList.remove('flex');
+        document.getElementById('wonderBanner').classList.add('hidden');
+        renderAll();
+      });
+
+      // Restart After Summary Modal
+      document.getElementById('btnRestartAfterSummary').addEventListener('click', () => {
+        document.getElementById('summaryModal').classList.add('hidden');
+        localStorage.removeItem('beauty_of_monk_save_en');
+        state = JSON.parse(JSON.stringify(DEFAULT_GAME_STATE));
+        document.getElementById('wonderBanner').classList.add('hidden');
+        renderAll();
+      });
+
+      // Copy Certificate
+      document.getElementById('btnShareCertificate').addEventListener('click', () => {
+        const text = `🪷 Beauty of Monk — The Saffron Path (1 in 65,000,000)\n` +
+          `${state.monkName} · ${state.vassa} Vassa (${state.day} Days)\n` +
+          `Highest Grace: ${state.rarestFoundTitle}\n` +
+          `"All things arise, stay for a brief season, and fade away; true wealth is the absence of craving."`;
+        navigator.clipboard.writeText(text).then(() => {
+          alert("Copied certificate to clipboard!");
+        }).catch(() => {});
+      });
+
+      // Spacebar to advance mindful step
+      window.addEventListener('keydown', (e) => {
+        if (e.code === 'Space' && document.activeElement.tagName !== 'BUTTON') {
+          e.preventDefault();
+          if (state.ordained && !state.activeEvent) {
+            doMeditation();
+          }
+        }
+      });
+    });
+  </script>
+</body>
+</html>
