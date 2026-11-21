@@ -458,7 +458,7 @@
             </h4>
           </div>
           <p class="text-[11px] text-[#786d5e] mt-0.5 font-sans-ui">
-            Hold button to settle thoughts. High stillness boosts rare discovery odds up to <span class="text-emerald-700 font-bold font-mono-num">5.0x</span>.
+            Hold button to settle thoughts. High stillness boosts rare discovery odds up to <span id="txtMaxClarity" class="text-emerald-700 font-bold font-mono-num">3.5x</span> (grows with Path Attainments).
           </p>
           <!-- Gauge -->
           <div class="w-full h-1.5 bg-amber-950/10 rounded-full mt-1.5 overflow-hidden">
@@ -596,7 +596,10 @@
       <p id="txtSummaryStory" class="text-xs sm:text-sm text-[#473e35] italic leading-relaxed text-left border-l-2 border-[#b8770a] pl-3 py-1">
       </p>
 
-      <div class="flex items-center justify-center gap-2 pt-2">
+      <div class="flex flex-wrap items-center justify-center gap-2 pt-2">
+        <button id="btnContinueAfterEnding" class="hidden monk-btn px-4 py-2 rounded-xl border border-emerald-700/30 bg-emerald-50 text-xs font-sans-ui font-semibold text-emerald-800">
+          🌿 Continue in Temple
+        </button>
         <button id="btnShareCertificate" class="monk-btn px-4 py-2 rounded-xl border border-[#b8770a]/30 bg-amber-50 text-xs font-sans-ui font-semibold text-[#8f5403]">
           📋 Copy Epitaph
         </button>
@@ -1198,11 +1201,13 @@
       seenEvents: [],
       activeEvent: null,
       rarestFoundOdds: 0,
-      rarestFoundTitle: 'None yet'
+      rarestFoundTitle: 'None yet',
+      completedGrandEnding: false
     };
 
     let state = loadGameState();
     let isHoldingBreath = false;
+    let pendingGrandEnding = false;
     let breathInterval = null;
     let autoInterval = null;
 
@@ -1260,17 +1265,31 @@
 
       const newStage = getVirtueStage(nextVal).name;
       if (newStage !== prevStage && nextVal > prev) {
-        state.clarityBonus = Math.min(2.0, state.clarityBonus + 0.15);
-        return { statKey, stage: newStage };
+        const maxGain = newStage === 'Arahant' ? 1.0 : 0.5;
+        state.clarityBonus = Math.min(6.0, state.clarityBonus + 0.25);
+        return { statKey, stage: newStage, maxGain };
       }
       return null;
     }
 
+    function getMaxClarity() {
+      let bonus = 0;
+      for (const key of ['vinaya', 'sati', 'panna', 'metta']) {
+        const val = state[key];
+        if (val >= 100) bonus += 0.5;
+        if (val >= 250) bonus += 0.5;
+        if (val >= 500) bonus += 0.5;
+        if (val >= 1000) bonus += 1.0;
+      }
+      return 3.0 + bonus;
+    }
+
     function getClarityMultiplier() {
-      const virtueSum = Math.min(1.5, ((state.sati + state.panna + state.metta) / 1000) * 0.75);
-      const breathBonus = (state.stillnessGauge / 100) * 2.5; // up to +2.5x from holding breath
+      const maxClarity = getMaxClarity();
+      const virtueSum = Math.min(3.5, ((state.sati + state.panna + state.metta) / 1000) * 1.2);
+      const breathBonus = (state.stillnessGauge / 100) * 3.0; // up to +3.0x from holding breath
       const total = 1.0 + virtueSum + breathBonus + state.clarityBonus;
-      return Math.min(5.0, Math.max(1.0, total));
+      return Math.min(maxClarity, Math.max(1.0, total));
     }
 
     // Boosted Serenity Roll with Pity System & Preference for New Discoveries
@@ -1287,20 +1306,14 @@
 
       let targetPool = commons;
 
-      // Tier threshold calculation based on activity and clarity (balanced rare odds)
-      let transcendentThreshold = 0.2 * clarity;
-      let profoundThreshold = 1.5 * clarity;
-      let rareThreshold = 5.0 * clarity;
+      // Stat-gated progression: players build virtues before unlocking Profound & Transcendent wonders
+      const totalVirtues = state.sati + state.panna + state.metta;
+      const statFactor = Math.min(1.8, Math.max(0.25, totalVirtues / 500));
+      const activityBoost = activityType === 'tudong' ? 1.5 : (activityType === 'meditation' && state.stillnessGauge >= 40 ? 1.3 : 1.0);
 
-      if (activityType === 'tudong') {
-        transcendentThreshold = 1.0;
-        profoundThreshold = 4.5;
-        rareThreshold = 15.0;
-      } else if (activityType === 'meditation' && state.stillnessGauge >= 40) {
-        transcendentThreshold = 0.8;
-        profoundThreshold = 3.5;
-        rareThreshold = 13.0;
-      }
+      let transcendentThreshold = totalVirtues >= 400 ? (0.15 * clarity * statFactor * activityBoost) : 0;
+      let profoundThreshold = totalVirtues >= 200 ? (0.45 * clarity * statFactor * activityBoost) : 0;
+      let rareThreshold = Math.min(14.0, 1.8 * clarity * activityBoost);
 
       if (rand < transcendentThreshold) {
         targetPool = transcendents;
@@ -1308,7 +1321,7 @@
         targetPool = profounds;
       } else if (rand < rareThreshold) {
         targetPool = rares;
-      } else if (rand < 38.0) {
+      } else if (rand < 26.0) {
         targetPool = uncommons;
       } else {
         targetPool = commons;
@@ -1501,10 +1514,34 @@
       const isNew = recordWonder(wonder);
 
       // Trigger Grand Celebration FX ONLY on first discovery of 1 in 75,000+ wonders
-      if (wonder.odds >= 75000 && isNew) {
+      const triggeredRareModal = wonder.odds >= 75000 && isNew;
+      if (triggeredRareModal) {
         triggerGrandRareDiscovery(wonder, isNew);
       } else {
         showWonderBanner(wonder, isNew);
+      }
+
+      // Trigger Arahant Path Mastery FX when any virtue reaches 1,000 (Arahant)
+      const arahantPaths = attained.filter(a => a.stage === 'Arahant');
+      if (arahantPaths.length > 0) {
+        triggerArahantAttainmentFX(arahantPaths[0].statKey, !triggeredRareModal);
+      }
+
+      // Check for 100% Almanac Completion Grand Ending
+      const allWondersFound = Object.keys(state.discoveredWonders).length >= ALMANAC_POOL.length;
+      if (allWondersFound && !state.completedGrandEnding) {
+        state.completedGrandEnding = true;
+        if (autoInterval) {
+          clearInterval(autoInterval);
+          autoInterval = null;
+          document.getElementById('btnAutoContemplate').textContent = "[Auto-Step: OFF]";
+          document.getElementById('btnAutoContemplate').classList.remove('text-[#b8770a]');
+        }
+        if (triggeredRareModal) {
+          pendingGrandEnding = true;
+        } else {
+          setTimeout(() => triggerDisrobeOrEnding(true), 400);
+        }
       }
 
       const ev = checkStoryEventTrigger();
@@ -1519,7 +1556,7 @@
       const storyParagraphs = [...paragraphs];
       if (attained.length > 0) {
         const labels = { vinaya: 'Vinaya', sati: 'Sati', panna: 'Wisdom', metta: 'Metta' };
-        const msg = attained.map(a => `${labels[a.statKey]} reached ${a.stage} (+0.15x Clarity)`).join(' · ');
+        const msg = attained.map(a => `${labels[a.statKey]} reached ${a.stage} (+${a.maxGain.toFixed(1)}x Max Clarity)`).join(' · ');
         storyParagraphs.push(`✨ Path Attainment: ${msg}.`);
       }
 
@@ -1534,7 +1571,7 @@
     function checkStoryEventTrigger() {
       for (const ev of ENCOUNTER_EVENTS) {
         if (state.day >= ev.minDay && !state.seenEvents.includes(ev.id)) {
-          if (Math.random() < 0.32) {
+          if (Math.random() < 0.18) {
             return ev;
           }
         }
@@ -1618,6 +1655,54 @@
       showWonderBanner(wonder, isNew);
     }
 
+    function triggerArahantAttainmentFX(statKey, showModal = true) {
+      const flash = document.getElementById('celestialFlash');
+      flash.className = 'celestial-burst-glow';
+      setTimeout(() => { flash.className = 'hidden'; }, 1800);
+
+      audio.playCelestialAwakeningChord();
+      if (particleScene) particleScene.explodeRareSparkles();
+      if (navigator.vibrate) {
+        try { navigator.vibrate([120, 60, 200]); } catch (e) {}
+      }
+
+      if (!showModal) return;
+
+      const meta = {
+        vinaya: {
+          title: 'Arahant of Pure Vinaya',
+          quote: 'Every precept is no longer a rule kept by effort, but the natural fragrance of a stainless heart.',
+          reflection: 'When discipline becomes effortless compassion, the mind walks free anywhere in the world.'
+        },
+        sati: {
+          title: 'Arahant of Unbroken Sati',
+          quote: 'Awareness shines like a steady lamp in a windless sanctuary—neither grasping nor pushing away.',
+          reflection: 'In pure presence, every breath is complete and timeless.'
+        },
+        panna: {
+          title: 'Arahant of Liberating Wisdom',
+          quote: 'Seeing all conditioned things arise and pass like morning mist, the last knot of clinging dissolves.',
+          reflection: 'Wisdom is not knowing everything; it is needing to hold onto nothing.'
+        },
+        metta: {
+          title: 'Arahant of Boundless Metta',
+          quote: 'Love radiates without boundary, friend or stranger, leaf or star—held in equal tenderness.',
+          reflection: 'A heart without enemies has already entered peace.'
+        }
+      }[statKey];
+
+      if (!meta) return;
+      const modal = document.getElementById('rareDiscoveryModal');
+      document.getElementById('modalRareOddsBadge').textContent = 'PATH MASTERY · ARAHANT (1000/1000)';
+      document.getElementById('modalRareOddsBadge').className = 'inline-block px-3 py-1 rounded-full text-xs font-mono-num font-bold tracking-wider badge-transcendent mb-2';
+      document.getElementById('modalRareTitle').textContent = meta.title;
+      document.getElementById('modalRareQuote').textContent = `"${meta.quote}"`;
+      document.getElementById('modalRareReflection').textContent = meta.reflection;
+
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
     // --- 11. UI RENDERING ENGINE ---
     function setStoryText(heading, paragraphs) {
       const container = document.getElementById('storyContent');
@@ -1690,7 +1775,9 @@
 
       document.getElementById('hudVassa').textContent = state.vassa;
       document.getElementById('hudDay').textContent = state.day;
-      document.getElementById('hudClarity').textContent = getClarityMultiplier().toFixed(2) + 'x';
+      document.getElementById('hudClarity').textContent = `${getClarityMultiplier().toFixed(2)}x / ${getMaxClarity().toFixed(1)}x`;
+      const maxClarityEl = document.getElementById('txtMaxClarity');
+      if (maxClarityEl) maxClarityEl.textContent = `${getMaxClarity().toFixed(1)}x`;
 
       const renderVirtue = (val, valId, stageId, barId) => {
         const st = getVirtueStage(val);
@@ -1764,7 +1851,7 @@
         if (state.stillnessGauge < 100) {
           state.stillnessGauge = Math.min(100, state.stillnessGauge + 3.5);
           document.getElementById('breathGaugeFill').style.width = `${state.stillnessGauge}%`;
-          document.getElementById('hudClarity').textContent = getClarityMultiplier().toFixed(2) + 'x';
+          document.getElementById('hudClarity').textContent = `${getClarityMultiplier().toFixed(2)}x / ${getMaxClarity().toFixed(1)}x`;
         }
       }, 90);
     }
@@ -1830,26 +1917,46 @@
     }
 
     // --- 14. ENDING & SUMMARY CERTIFICATE ---
-    function triggerDisrobeOrEnding() {
+    function triggerDisrobeOrEnding(isGrandComplete = false) {
       const modal = document.getElementById('summaryModal');
       const titleEl = document.getElementById('txtSummaryTitle');
       const subEl = document.getElementById('txtSummarySubtitle');
       const storyEl = document.getElementById('txtSummaryStory');
+      const btnContinue = document.getElementById('btnContinueAfterEnding');
+
+      const totalFound = Object.keys(state.discoveredWonders).length;
+      const isAllCollected = isGrandComplete || totalFound >= ALMANAC_POOL.length;
 
       document.getElementById('sumName').textContent = state.monkName;
       document.getElementById('sumVassa').textContent = `${state.vassa} Vassa (${state.day} Days)`;
       document.getElementById('sumRarest').textContent = state.rarestFoundOdds > 0 ? `1 in ${state.rarestFoundOdds.toLocaleString()}` : "None";
-      document.getElementById('sumMerit').textContent = (state.panna + state.metta > 120) ? "Boundless Virtue & Merit" : "Pure & Honorable";
+      document.getElementById('sumMerit').textContent = isAllCollected
+        ? `Complete (${totalFound}/${ALMANAC_POOL.length})`
+        : ((state.panna + state.metta > 120) ? "Boundless Virtue & Merit" : "Pure & Honorable");
 
-      if (state.rarestFoundOdds >= 65000000) {
+      if (isAllCollected) {
+        btnContinue.classList.remove('hidden');
+        const flash = document.getElementById('celestialFlash');
+        flash.className = 'celestial-burst-glow';
+        setTimeout(() => { flash.className = 'hidden'; }, 1800);
+        audio.playCelestialAwakeningChord();
+        if (particleScene) particleScene.explodeRareSparkles();
+
+        titleEl.textContent = "Parinibbana · Complete Awakening";
+        subEl.textContent = `All ${ALMANAC_POOL.length}/${ALMANAC_POOL.length} Sacred Wonders Realized · 1 in 65,000,000`;
+        storyEl.textContent = `Every veil of illusion has fallen away. Over ${state.day} days (${state.vassa} Vassa), you witnessed every fleeting marvel—from morning dew to the unconditioned radiance of Nirvana. Nothing remains unlearned, nothing remains unloved; only boundless light across all realms.`;
+      } else if (state.rarestFoundOdds >= 65000000) {
+        btnContinue.classList.add('hidden');
         titleEl.textContent = "The Liberated Sage · Nirvana";
         subEl.textContent = "Completely Free from Samsara (1 in 65,000,000)";
         storyEl.textContent = "Having extinguished all cravings, your mind touched the unconditioned, deathless radiance of Nirvana. A blessing to gods and humans across sixty-five million lives.";
       } else if (state.vassa >= 15) {
+        btnContinue.classList.add('hidden');
         titleEl.textContent = "Venerated Master of the Mountain";
         subEl.textContent = "Elder of Boundless Wisdom & Compassion";
         storyEl.textContent = `For ${state.vassa} Vassa, you held the pure vinaya without blemish, mentoring generations of novices and bringing tranquility to the weary world.`;
       } else {
+        btnContinue.classList.add('hidden');
         titleEl.textContent = "Noble Return to Lay Life";
         subEl.textContent = "Carrying the Light of Stillness Back to the World";
         storyEl.textContent = `Though disrobing back to worldly affairs, the mindfulness, patience, and peace cultivated over ${state.day} days remain an indestructible compass for a righteous and fulfilled life.`;
@@ -1886,6 +1993,10 @@
       document.getElementById('btnDismissRareModal').addEventListener('click', () => {
         document.getElementById('rareDiscoveryModal').classList.add('hidden');
         document.getElementById('rareDiscoveryModal').classList.remove('flex');
+        if (pendingGrandEnding) {
+          pendingGrandEnding = false;
+          triggerDisrobeOrEnding(true);
+        }
       });
 
       // Daily Activity Buttons
@@ -1927,7 +2038,13 @@
       });
 
       // Disrobe Button
-      document.getElementById('btnDisrobeEarly').addEventListener('click', triggerDisrobeOrEnding);
+      document.getElementById('btnDisrobeEarly').addEventListener('click', () => triggerDisrobeOrEnding(false));
+
+      // Continue in Temple after Grand Ending
+      document.getElementById('btnContinueAfterEnding').addEventListener('click', () => {
+        document.getElementById('summaryModal').classList.add('hidden');
+        document.getElementById('summaryModal').classList.remove('flex');
+      });
 
       // Reset Modal Handlers
       const resetModal = document.getElementById('confirmRestartModal');
