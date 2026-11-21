@@ -296,8 +296,9 @@
           <span>🛡️</span> <span class="hidden sm:inline font-medium">Vinaya</span>
         </div>
         <span id="valVinaya" class="font-mono-num text-xs font-bold text-[#26211a] mt-0.5">100</span>
+        <span id="stageVinaya" class="text-[9px] font-semibold text-amber-700 leading-none mt-0.5">Sotapanna</span>
         <div class="w-full h-1 bg-amber-950/10 rounded-full mt-1 overflow-hidden">
-          <div id="barVinaya" class="h-full bg-amber-600 transition-all duration-300" style="width: 100%"></div>
+          <div id="barVinaya" class="h-full bg-amber-600 transition-all duration-300" style="width: 0%"></div>
         </div>
       </div>
 
@@ -307,6 +308,7 @@
           <span>🕯️</span> <span class="hidden sm:inline font-medium">Sati</span>
         </div>
         <span id="valSati" class="font-mono-num text-xs font-bold text-[#26211a] mt-0.5">38</span>
+        <span id="stageSati" class="text-[9px] font-semibold text-[#786d5e] leading-none mt-0.5">Seeker</span>
         <div class="w-full h-1 bg-amber-950/10 rounded-full mt-1 overflow-hidden">
           <div id="barSati" class="h-full bg-emerald-600 transition-all duration-300" style="width: 38%"></div>
         </div>
@@ -318,6 +320,7 @@
           <span>📜</span> <span class="hidden sm:inline font-medium">Wisdom</span>
         </div>
         <span id="valPanna" class="font-mono-num text-xs font-bold text-[#26211a] mt-0.5">25</span>
+        <span id="stagePanna" class="text-[9px] font-semibold text-[#786d5e] leading-none mt-0.5">Seeker</span>
         <div class="w-full h-1 bg-amber-950/10 rounded-full mt-1 overflow-hidden">
           <div id="barPanna" class="h-full bg-yellow-600 transition-all duration-300" style="width: 25%"></div>
         </div>
@@ -329,6 +332,7 @@
           <span>🪷</span> <span class="hidden sm:inline font-medium">Metta</span>
         </div>
         <span id="valMetta" class="font-mono-num text-xs font-bold text-[#26211a] mt-0.5">30</span>
+        <span id="stageMetta" class="text-[9px] font-semibold text-[#786d5e] leading-none mt-0.5">Seeker</span>
         <div class="w-full h-1 bg-amber-950/10 rounded-full mt-1 overflow-hidden">
           <div id="barMetta" class="h-full bg-orange-600 transition-all duration-300" style="width: 30%"></div>
         </div>
@@ -340,6 +344,7 @@
           <span>🌿</span> <span class="hidden sm:inline font-medium">Vitality</span>
         </div>
         <span id="valHealth" class="font-mono-num text-xs font-bold text-[#26211a] mt-0.5">85</span>
+        <span class="text-[9px] font-medium text-[#786d5e] leading-none mt-0.5">Body</span>
         <div class="w-full h-1 bg-amber-950/10 rounded-full mt-1 overflow-hidden">
           <div id="barHealth" class="h-full bg-teal-600 transition-all duration-300" style="width: 85%"></div>
         </div>
@@ -1070,7 +1075,7 @@
           {
             label: 'Gently invite him to watch the flowing river that never returns',
             sub: '+15 Wisdom, +5 Vinaya · Teach the truth of impermanence',
-            apply: (s) => { s.panna += 15; s.vinaya = Math.min(100, s.vinaya + 5); s.clarityBonus += 0.25; },
+            apply: (s) => { s.panna += 15; s.vinaya = Math.min(1000, s.vinaya + 5); s.clarityBonus += 0.25; },
             outcome: "'Look at the river,' you whisper. 'It flows without holding back. Grasping the current only tires our hands.' A faint light of peace touches his eyes."
           }
         ]
@@ -1088,7 +1093,7 @@
           {
             label: 'Politely refuse the occult request; teach right livelihood instead',
             sub: '+20 Vinaya, +15 Wisdom · Uncorrupted moral purity',
-            apply: (s) => { s.vinaya = Math.min(100, s.vinaya + 20); s.panna += 15; s.clarityBonus += 0.35; },
+            apply: (s) => { s.vinaya = Math.min(1000, s.vinaya + 20); s.panna += 15; s.clarityBonus += 0.35; },
             outcome: "You smiled gently: 'Your success lies not in magical trinkets, but in honesty, diligence, and ethical conduct.' The patron paused, humbled by authentic Dhamma."
           },
           {
@@ -1112,7 +1117,7 @@
           {
             label: 'Give blessings with noble restraint, seeing her as a companion in Samsara',
             sub: '+20 Vinaya, +15 Sati · Pure equanimity',
-            apply: (s) => { s.vinaya = Math.min(100, s.vinaya + 20); s.sati += 15; s.clarityBonus += 0.3; },
+            apply: (s) => { s.vinaya = Math.min(1000, s.vinaya + 20); s.sati += 15; s.clarityBonus += 0.3; },
             outcome: "Keeping eyes gently lowered, you chanted the blessing with unwavering stillness, wishing her genuine happiness. Ancient clinging dissolved into pure goodwill."
           },
           {
@@ -1217,9 +1222,52 @@
       } catch (e) {}
     }
 
-    // --- 7. PROBABILITY & CLARITY ENGINE (BOOSTED GRACE) ---
+    // --- 7. PROBABILITY, ATTAINMENT & CLARITY ENGINE ---
+    const ATTAINMENT_STAGES = [
+      { name: 'Seeker', min: 0, next: 100, rate: 1.0, color: 'text-[#786d5e]' },
+      { name: 'Sotapanna', min: 100, next: 250, rate: 0.6, color: 'text-emerald-700' },
+      { name: 'Sakadagami', min: 250, next: 500, rate: 0.35, color: 'text-amber-700' },
+      { name: 'Anagami', min: 500, next: 1000, rate: 0.2, color: 'text-orange-700' },
+      { name: 'Arahant', min: 1000, next: 1000, rate: 0, color: 'text-purple-700' }
+    ];
+
+    function getVirtueStage(val) {
+      for (let i = ATTAINMENT_STAGES.length - 1; i >= 0; i--) {
+        if (val >= ATTAINMENT_STAGES[i].min) {
+          const st = ATTAINMENT_STAGES[i];
+          const pct = st.next === st.min ? 100 : Math.min(100, Math.max(0, ((val - st.min) / (st.next - st.min)) * 100));
+          return { ...st, pct };
+        }
+      }
+      return { ...ATTAINMENT_STAGES[0], pct: 0 };
+    }
+
+    function applyVirtueDelta(statKey, delta) {
+      if (!delta) return null;
+      const prev = state[statKey];
+      const prevStage = getVirtueStage(prev).name;
+
+      let nextVal = prev;
+      if (delta > 0) {
+        const rate = getVirtueStage(prev).rate;
+        if (rate <= 0) return null;
+        const scaled = Math.max(1, Math.round(delta * rate));
+        nextVal = Math.min(1000, prev + scaled);
+      } else {
+        nextVal = Math.max(0, prev + delta);
+      }
+      state[statKey] = nextVal;
+
+      const newStage = getVirtueStage(nextVal).name;
+      if (newStage !== prevStage && nextVal > prev) {
+        state.clarityBonus = Math.min(2.0, state.clarityBonus + 0.15);
+        return { statKey, stage: newStage };
+      }
+      return null;
+    }
+
     function getClarityMultiplier() {
-      const virtueSum = ((state.sati + state.panna + state.metta) / 100) * 0.6;
+      const virtueSum = Math.min(1.5, ((state.sati + state.panna + state.metta) / 1000) * 0.75);
       const breathBonus = (state.stillnessGauge / 100) * 2.5; // up to +2.5x from holding breath
       const total = 1.0 + virtueSum + breathBonus + state.clarityBonus;
       return Math.min(5.0, Math.max(1.0, total));
@@ -1294,9 +1342,9 @@
       }
 
       if (isNew) {
-        if (item.odds >= 10000) state.panna += 3;
-        else if (item.odds >= 500) state.sati += 2;
-        else state.metta += 1;
+        if (item.odds >= 10000) applyVirtueDelta('panna', 3);
+        else if (item.odds >= 500) applyVirtueDelta('sati', 2);
+        else applyVirtueDelta('metta', 1);
       }
 
       return isNew;
@@ -1382,7 +1430,7 @@
         [
           "Walking single-file along the misty village lane at 6:00 AM, bare feet meeting cool dust. The iron bowl warms with freshly steamed sticky rice offered with pure reverence."
         ],
-        { sati: 4, metta: 6, health: -2 },
+        { sati: 2, metta: 3, health: -2 },
         'alms'
       );
     }
@@ -1395,7 +1443,7 @@
         [
           "Sitting cross-legged on a woven reed mat. Breathing in, knowing breath. Breathing out, letting thoughts dissolve like clouds across an unrippled sky."
         ],
-        { sati: 8, panna: 6, health: 4 },
+        { sati: 4, panna: 3, health: 4 },
         'meditation'
       );
     }
@@ -1408,7 +1456,7 @@
         [
           "Sweeping fallen Bodhi leaves around the ancient pagoda. As dusk falls, resonant Pali chants echo across the hall, vibrating deep within the chest."
         ],
-        { vinaya: 3, metta: 4, sati: 3 },
+        { vinaya: 2, metta: 2, sati: 2 },
         'chores'
       );
     }
@@ -1421,7 +1469,7 @@
         [
           "Pitching your umbrella tent beneath towering forest trees. Surrounded by absolute wilderness, the mind becomes fearless, luminous, and deeply still."
         ],
-        { panna: 10, sati: 8, health: -3 },
+        { panna: 5, sati: 4, health: -3 },
         'tudong'
       );
     }
@@ -1435,11 +1483,14 @@
         state.vassa += 1;
       }
 
+      const attained = [];
       if (statDeltas) {
-        if (statDeltas.vinaya) state.vinaya = Math.min(100, Math.max(0, state.vinaya + statDeltas.vinaya));
-        if (statDeltas.sati) state.sati = Math.min(100, Math.max(0, state.sati + statDeltas.sati));
-        if (statDeltas.panna) state.panna = Math.min(100, Math.max(0, state.panna + statDeltas.panna));
-        if (statDeltas.metta) state.metta = Math.min(100, Math.max(0, state.metta + statDeltas.metta));
+        for (const key of ['vinaya', 'sati', 'panna', 'metta']) {
+          if (statDeltas[key]) {
+            const res = applyVirtueDelta(key, statDeltas[key]);
+            if (res) attained.push(res);
+          }
+        }
         if (statDeltas.health) state.health = Math.min(100, Math.max(5, state.health + statDeltas.health));
       }
 
@@ -1449,8 +1500,8 @@
       const wonder = rollSerenityWonder(activityType);
       const isNew = recordWonder(wonder);
 
-      // Check for Rare Discovery Grand FX (1 in 75,000+ / Profound & Transcendent)
-      if (wonder.odds >= 75000) {
+      // Trigger Grand Celebration FX ONLY on first discovery of 1 in 75,000+ wonders
+      if (wonder.odds >= 75000 && isNew) {
         triggerGrandRareDiscovery(wonder, isNew);
       } else {
         showWonderBanner(wonder, isNew);
@@ -1465,9 +1516,16 @@
         return;
       }
 
+      const storyParagraphs = [...paragraphs];
+      if (attained.length > 0) {
+        const labels = { vinaya: 'Vinaya', sati: 'Sati', panna: 'Wisdom', metta: 'Metta' };
+        const msg = attained.map(a => `${labels[a.statKey]} reached ${a.stage} (+0.15x Clarity)`).join(' · ');
+        storyParagraphs.push(`✨ Path Attainment: ${msg}.`);
+      }
+
       document.getElementById('tagTimeOfDay').textContent = title;
       document.getElementById('tagLocation').textContent = location;
-      setStoryText(title, paragraphs);
+      setStoryText(title, storyParagraphs);
 
       saveGameState();
       renderAll();
@@ -1634,17 +1692,19 @@
       document.getElementById('hudDay').textContent = state.day;
       document.getElementById('hudClarity').textContent = getClarityMultiplier().toFixed(2) + 'x';
 
-      document.getElementById('valVinaya').textContent = state.vinaya;
-      document.getElementById('barVinaya').style.width = `${state.vinaya}%`;
+      const renderVirtue = (val, valId, stageId, barId) => {
+        const st = getVirtueStage(val);
+        document.getElementById(valId).textContent = `${val}/${st.next}`;
+        const stageEl = document.getElementById(stageId);
+        stageEl.textContent = st.name;
+        stageEl.className = `text-[9px] font-semibold ${st.color} leading-none mt-0.5`;
+        document.getElementById(barId).style.width = `${st.pct}%`;
+      };
 
-      document.getElementById('valSati').textContent = state.sati;
-      document.getElementById('barSati').style.width = `${state.sati}%`;
-
-      document.getElementById('valPanna').textContent = state.panna;
-      document.getElementById('barPanna').style.width = `${state.panna}%`;
-
-      document.getElementById('valMetta').textContent = state.metta;
-      document.getElementById('barMetta').style.width = `${state.metta}%`;
+      renderVirtue(state.vinaya, 'valVinaya', 'stageVinaya', 'barVinaya');
+      renderVirtue(state.sati, 'valSati', 'stageSati', 'barSati');
+      renderVirtue(state.panna, 'valPanna', 'stagePanna', 'barPanna');
+      renderVirtue(state.metta, 'valMetta', 'stageMetta', 'barMetta');
 
       document.getElementById('valHealth').textContent = state.health;
       document.getElementById('barHealth').style.width = `${state.health}%`;
@@ -1686,7 +1746,7 @@
           [
             "Aware of each quiet step, the cool breath gently touching the upper lip. In the simplicity of the saffron robe, worldly weight softens into lightness."
           ],
-          { sati: 2 }
+          { sati: 1 }
         );
       });
 
