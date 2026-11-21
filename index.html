@@ -1239,19 +1239,19 @@
 
       let targetPool = commons;
 
-      // Tier threshold calculation based on activity and clarity
-      let transcendentThreshold = 4.0 * (clarity / 2.0);
-      let profoundThreshold = 18.0 * (clarity / 2.0);
-      let rareThreshold = 48.0 * (clarity / 2.0);
+      // Tier threshold calculation based on activity and clarity (balanced rare odds)
+      let transcendentThreshold = 0.2 * clarity;
+      let profoundThreshold = 1.5 * clarity;
+      let rareThreshold = 5.0 * clarity;
 
       if (activityType === 'tudong') {
-        transcendentThreshold = 14.0;
-        profoundThreshold = 38.0;
-        rareThreshold = 75.0;
+        transcendentThreshold = 1.0;
+        profoundThreshold = 4.5;
+        rareThreshold = 15.0;
       } else if (activityType === 'meditation' && state.stillnessGauge >= 40) {
-        transcendentThreshold = 12.0;
-        profoundThreshold = 35.0;
-        rareThreshold = 72.0;
+        transcendentThreshold = 0.8;
+        profoundThreshold = 3.5;
+        rareThreshold = 13.0;
       }
 
       if (rand < transcendentThreshold) {
@@ -1260,7 +1260,7 @@
         targetPool = profounds;
       } else if (rand < rareThreshold) {
         targetPool = rares;
-      } else if (rand < 82.0) {
+      } else if (rand < 38.0) {
         targetPool = uncommons;
       } else {
         targetPool = commons;
@@ -1476,7 +1476,7 @@
     function checkStoryEventTrigger() {
       for (const ev of ENCOUNTER_EVENTS) {
         if (state.day >= ev.minDay && !state.seenEvents.includes(ev.id)) {
-          if (Math.random() < 0.65) {
+          if (Math.random() < 0.32) {
             return ev;
           }
         }
