@@ -1449,8 +1449,8 @@
       const wonder = rollSerenityWonder(activityType);
       const isNew = recordWonder(wonder);
 
-      // Check for Rare Discovery Grand FX (Tier rare, profound, transcendent)
-      if (wonder.odds >= 2200) {
+      // Check for Rare Discovery Grand FX (1 in 75,000+ / Profound & Transcendent)
+      if (wonder.odds >= 75000) {
         triggerGrandRareDiscovery(wonder, isNew);
       } else {
         showWonderBanner(wonder, isNew);
@@ -1581,7 +1581,7 @@
       void banner.offsetWidth;
       banner.classList.add('animate-fadeIn');
 
-      if (item.odds >= 50000) {
+      if (item.odds >= 75000) {
         banner.classList.add('pulse-gold');
       } else {
         banner.classList.remove('pulse-gold');
